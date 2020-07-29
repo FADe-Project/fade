@@ -27,7 +27,7 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE
         npm install
-        npm install -g pkg
+        sudo npm install -g pkg
         pkg .
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2
