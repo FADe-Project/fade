@@ -35,4 +35,4 @@ jobs:
         # Artifact name
         name: Binaries
         # A file, directory or wildcard pattern that describes what to upload
-        path: fade-cli-*
+        path: fade-*
