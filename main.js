@@ -367,6 +367,7 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 	fs.mkdirSync(fadework+'/internal', 0755);
 	fs.writeFileSync(fadework+'/fade.json', data);
 	fs.writeFileSync(fadework+"/usr/bin/"+name, generate_runbin(name, cmdline, type));
+	fs.chmodSync(fadework+"/usr/bin/"+name,0755);
 	console.log(`
 [FADe] Structure is successfully created.
 [FADe] Please refer manual and --help to next process. 
