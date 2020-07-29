@@ -29,7 +29,7 @@ jobs:
         COMMIT=$(git rev-parse HEAD | head -c 7)
         node main.js --init --path . --name fade --version 0.0.0-$COMMIT --description "A project which everyone can make linux package easily" --url "https://github.com/fade-project/fade" --priority optional --architecture all --cmdline "node main.js" --dependancy nodejs --maintainer-name "FADe Project" --maintainer-email "fade-linux@protonmail.com" --type normal
         node main.js --create-deb --path . --output .
-        sudo dpkg -i fade_0.0.0-$COMMIT_all.deb
+        sudo dpkg -i fade_0.0.0-$COMMIT\_all.deb
         fade --moo
     # Runs a set of commands using the runners shell
     - name: Create Static Binary
