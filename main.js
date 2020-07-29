@@ -12,28 +12,40 @@
 //  WARNING: This Source code IS COMPLETELY spaghetti code.
 
 const fade_version = "Git Version";
-var args = process.argv.slice(2);
 var rls = require('readline-sync');
 var ln = '\n';
 var tmpjs = require('tmp');
 var child_process = require('child_process');
 var fs = require("fs");
 var rimraf = require("rimraf");
+var copy = require('recursive-copy');
+var targz = require("targz");
 var args = require('minimist')(process.argv.slice(2), {
     alias: {
         h: 'help',
 		v: 'verbose',
-		depend: 'dependancy'
+		o: 'output',
+		depend: 'dependancy',
+		deb: 'create-deb'
     }
 });
 main();
 
-function generate_control(name, version, maintainer_name, maintainer_email, depends, url, desc) {
+function promise_targz_compress(opt) {
+    return new Promise((res, rej) => {
+        targz.compress(opt, function(err) {
+            if(err) return rej(err);
+            res();
+        });
+    });
+}
+
+function generate_deb_control(name, version, maintainer_name, maintainer_email, depends, architecture, priority, url, desc) {
     str = "";
     str += "Package: " + name + ln;
     str += "Version: " + version + ln;
-    str += "Priority: Optional\n"; //Will be editable in future releases.
-    str += "Architecture: all\n"; //Will be editable in future releases.
+    str += "Priority: " + priority + ln;
+    str += "Architecture: " + architecture + ln;
     str += "Maintainer: " + maintainer_name + " <" + maintainer_email + ">\n";
     str += "Depends: systemd, " + depends + ln;
     str += "Homepage: " + url + ln;
@@ -61,7 +73,7 @@ function generate_runbin(name, cmdline, type) {
     //console.log("RunBin File: \n"+str);
     return str;
 }
-function generate_postinst(name, version, desc, cmdline, type, maintainer_name, maintainer_email, postinst) {
+function generate_deb_postinst(name, version, desc, cmdline, type, maintainer_name, maintainer_email, postinst) {
     str = "";
     str += "#!/bin/bash\n";
     if(type == "systemd" || type == "isolated") {
@@ -96,7 +108,7 @@ function generate_postinst(name, version, desc, cmdline, type, maintainer_name, 
     //console.log("PostInst File: \n"+str);
     return str;
 }
-function generate_prerm(name, type, prerm) {
+function generate_deb_prerm(name, type, prerm) {
     str = "";
     str += "#!/bin/bash\n";
     str += prerm;
@@ -128,6 +140,8 @@ function main() {
 		init();
 	}else if(args.hasOwnProperty("edit")) {
 		edit();
+	}else if(args.hasOwnProperty("create-deb")) {
+		create_deb();
 	}else if(args.hasOwnProperty("moo")) {
 		console.error("[FADe] Actually, FADe has Half-cow Powers.");
 		console.error("\t\t(__) \n\t\t(oo) \n\t      ---\\/ \n\t\t||   \n\t      --/\\ \n\t\t~~ ");
@@ -139,7 +153,7 @@ function main() {
 function help(serious_mode) {
 	var return_val = "";
 	return_val += serious_mode?"":"FADe Project - CLI Edition / "+fade_version+" Help\n";
-	return_val += serious_mode?"":"This program is free software, Please refer LICENCE to detail\n";
+	return_val += serious_mode?"":"This program is free software under GNU GPLv3+, Please refer LICENCE to detail\n";
 	return_val += serious_mode?"":"Copyright (C) FADe Project, All rights reserved.\n\n";
 	return_val += "--init [parameters]: Initialize your project.\n";
 	return_val += "\t--path \"/path/to/dir\": Locate your project.\n";
@@ -156,11 +170,82 @@ function help(serious_mode) {
 	return_val += "\t--type [systemd, isolated, normal]: Set project's type. see manual to detail.\n\n"
 	return_val += "--edit [parameters]: Edit your project's configuration with --init's parameters. Additional parameters:\n"
 	return_val += "\t--postinst-payload: Edit Post-Install Script's payload with your preferred editor.\n"
-	return_val += "\t--prerm-payload: Edit Pre-Remove Script's payload with your preferred editor.\n"
-	return_val += "\n"; 
+	return_val += "\t--prerm-payload: Edit Pre-Remove Script's payload with your preferred editor.\n\n"
+	return_val += "--[create-]deb [parameters]: Create .deb to Install your project to Debian-based systems\n";
+	return_val += "\t--path \"/path/to/dir\": Locate your project.\n";
+	return_val += "\t--o[utput] \"/path/to/dir\": Change output deb's location, Default is project directory.\n";
 	return_val += "--h[elp]: Show this help message.\n";
 	return_val += serious_mode?"":"\n\tMaybe this FADe has Super Cow Powers..?";
 	return return_val;
+}
+
+function create_deb() {
+	if(!args.hasOwnProperty("path")) {
+		console.error("[FADe] --create-deb can't be used without --path parameter.");
+		process.exit(1);
+	} var path = args['path'];
+	if(!fs.existsSync(path+'/fadework')) {
+		console.error("[FADe] Do --init first, please.");
+		process.exit(1);
+	} var fadework = path + '/fadework';
+	var dataraw = require(fadework+'/fade.json');
+	var control = generate_deb_control(dataraw['name'], dataraw['version'], dataraw['maintainer_name'], dataraw['maintainer_email'], dataraw['depends'],
+										dataraw['architecture'], dataraw['priority'], dataraw['url'], dataraw['desc']);
+	var postinst = generate_deb_postinst(dataraw['name'], dataraw['version'], dataraw['desc'], dataraw['run'], dataraw['type'], dataraw['maintainer_name'],
+										dataraw['maintainer_email'], dataraw['postinst_payload']);
+	var prerm = generate_deb_prerm(dataraw['name'], dataraw['type'], dataraw['prerm_payload']);
+	var name = dataraw['name'];
+	var version = dataraw['version'];
+	var architecture = dataraw['architecture'];
+	var deb_loc = args.hasOwnProperty("output") ? args['output'] : ret_default("output", path);
+	function finalize() {
+		rimraf.sync(fadework+'/internal');
+		rimraf.sync(fadework+'/temp');
+		rimraf.sync(fadework+'/usr/lib/'+name);
+		fs.mkdirSync(fadework+'/internal', 0755);
+		fs.mkdirSync(fadework+'/usr/lib/'+name, 0755);
+		fs.writeFileSync(fadework+'/usr/lib/'+name+"/DO_NOT_PUT_FILE_ON_THIS_DIRECTORY", "ANYTHING IN THIS DIRECTORY IS WILL BE DISCARDED");
+	}
+	if (fs.existsSync(fadework+'/internal')) {
+        rimraf.sync(fadework+'/internal');
+	} fs.mkdirSync(fadework+'/internal', 0755);
+
+	if (fs.existsSync(fadework+'/usr/lib/'+name)) {
+        rimraf.sync(fadework+'/usr/lib/'+name);
+	} fs.mkdirSync(fadework+'/usr/lib/'+name, 0755);
+
+	if (fs.existsSync(fadework+'/temp')) {
+        rimraf.sync(fadework+'/temp');
+	} fs.mkdirSync(fadework+'/temp', 0755);
+
+	fs.writeFileSync(fadework+"/internal/control", control);
+    fs.writeFileSync(fadework+"/internal/postinst", postinst);
+    fs.chmodSync(fadework+"/internal/postinst", 0755);
+    fs.writeFileSync(fadework+"/internal/prerm", prerm);
+	fs.chmodSync(fadework+"/internal/prerm", 0755);
+	fs.writeFileSync(fadework+"/temp/debian-binary", "2.0\n");
+	fs.chmodSync(fadework+"/temp/debian-binary", 0644);	
+	var promise_copy = copy(path, fadework+'/usr/lib/'+name, {overwrite: true,	expand: true, dot: true, junk: true, filter: ['**/*', '!fadework', '!fadework/*']});
+	promise_copy.then(function() {
+		var promise_control = promise_targz_compress({src: fadework+"/internal", dest: fadework+"/temp/control.tar.gz", tar: {entries: ["."]}});
+		var promise_data = promise_targz_compress({src: fadework, dest: fadework+"/temp/data.tar.gz", tar: {entries: ["usr/"]}});
+		Promise.all([promise_control, promise_data]).then(function() {
+			// TODO: ar w/o external binary
+			child_process.execSync("ar r "+deb_loc+"/"+name+"_"+version+"_"+architecture+".deb "+fadework+"/temp/debian-binary "+fadework+"/temp/control.tar.gz "+fadework+"/temp/data.tar.gz");
+			console.log("[FADe] "+deb_loc+"/"+name+"_"+version+"_"+architecture+".deb Created. Install on your system!");
+			finalize();
+		}).catch(function(err){
+			console.error("[FADe] Compress Failed.");
+			console.error(err);
+			finalize();
+			process.exit(1);
+		});
+	}).catch(function(err) {
+		console.error("[FADe] Copy Failed.");
+		console.error(err);
+		finalize();
+		process.exit(1);
+	});
 }
 
 function edit() {
@@ -278,7 +363,7 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 	fs.mkdirSync(fadework+'/usr/bin', 0755);
 	fs.mkdirSync(fadework+'/usr/lib', 0755);
 	fs.mkdirSync(fadework+'/usr/lib/'+name, 0755);
-	   fs.writeFileSync(fadework+'/usr/lib/'+name+"/DO_NOT_PUT_FILE_ON_THIS_DIRECTORY", "ANYTHING IN THIS DIRECTORY IS WILL BE DISCARDED");
+	fs.writeFileSync(fadework+'/usr/lib/'+name+"/DO_NOT_PUT_FILE_ON_THIS_DIRECTORY", "ANYTHING IN THIS DIRECTORY IS WILL BE DISCARDED");
 	fs.mkdirSync(fadework+'/internal', 0755);
 	fs.writeFileSync(fadework+'/fade.json', data);
 	fs.writeFileSync(fadework+"/usr/bin/"+name, generate_runbin(name, cmdline, type));
