@@ -15,6 +15,8 @@ const fade_version = "Git Version";
 var args = process.argv.slice(2);
 var rls = require('readline-sync');
 var ln = '\n';
+var tmpjs = require('tmp');
+var child_process = require('child_process');
 var fs = require("fs");
 var rimraf = require("rimraf");
 var args = require('minimist')(process.argv.slice(2), {
@@ -124,6 +126,8 @@ function main() {
 		console.log(help(false));
 	}else if(args.hasOwnProperty("init")) {
 		init();
+	}else if(args.hasOwnProperty("edit")) {
+		edit();
 	}else if(args.hasOwnProperty("moo")) {
 		console.error("[FADe] Actually, FADe has Half-cow Powers.");
 		console.error("\t\t(__) \n\t\t(oo) \n\t      ---\\/ \n\t\t||   \n\t      --/\\ \n\t\t~~ ");
@@ -149,12 +153,63 @@ function help(serious_mode) {
 	return_val += "\t--cmdline \"node main.js\": Set your project's run command\n";
 	return_val += "\t--maintainer-name \"John Doe\": Set maintainer's name\n";
 	return_val += "\t--maintainer-email \"john@example.com\": Set maintainer's email address\n";
-	return_val += "\t--type [systemd, isolated, normal]: Set project's type. see manual to detail.\n"
+	return_val += "\t--type [systemd, isolated, normal]: Set project's type. see manual to detail.\n\n"
+	return_val += "--edit [parameters]: Edit your project's configuration with --init's parameters. Additional parameters:\n"
+	return_val += "\t--postinst-payload: Edit Post-Install Script's payload with your preferred editor.\n"
+	return_val += "\t--prerm-payload: Edit Pre-Remove Script's payload with your preferred editor.\n"
 	return_val += "\n"; 
 	return_val += "--h[elp]: Show this help message.\n";
 	return_val += serious_mode?"":"\n\tMaybe this FADe has Super Cow Powers..?";
 	return return_val;
 }
+
+function edit() {
+	if(process.env.EDITOR == undefined) {
+		console.warn("[FADe] $EDITOR not set, defaulting to vi");
+		process.env.EDITOR = "vi"
+	}
+	if(!args.hasOwnProperty("path")) {
+		console.error("[FADe] --edit can't be used without --path parameter.");
+		process.exit(1);
+	} var path = args['path'];
+	if(!fs.existsSync(path+'/fadework')) {
+		console.error("[FADe] Do --init first, please.");
+		process.exit(1);
+	} var fadework = path + '/fadework';
+	var dataraw = require(fadework+'/fade.json');
+
+	if(args.hasOwnProperty("name")) data['name'] = args['name'];
+	if(args.hasOwnProperty("description")) data['desc'] = args['description'];
+	if(args.hasOwnProperty("version")) data['version'] = args['version'];
+	if(args.hasOwnProperty("url")) data['url'] = args['url'];
+	if(args.hasOwnProperty("architecture")) data['architecture'] = args['architecture'];
+	if(args.hasOwnProperty("priority")) data['priority'] = args['priority'];
+	if(args.hasOwnProperty("cmdline")) data['run'] = args['cmdline'];
+	if(args.hasOwnProperty("maintainer-name")) data['maintainer_name'] = args['maintainer-name'];
+	if(args.hasOwnProperty("maintainer-email")) data['maintainer_email'] = args['maintainer-email'];
+	if(args.hasOwnProperty("type")) data['type'] = args['type'];
+	/* Dependancy Configuration here */
+	if(args.hasOwnProperty("postinst-payload")) {
+		var tmpfile = tmpjs.tmpNameSync();
+		console.log('[FADe] Opening file with $EDITOR.');
+		fs.writeFileSync(tmpfile, dataraw['postinst_payload']);
+		child_process.spawnSync(process.env.EDITOR, [tmpfile], { stdio: 'inherit', detached: true});
+		dataraw['postinst_payload'] = fs.readFileSync(tmpfile).toString();
+		fs.unlinkSync(tmpfile);
+	}
+	if(args.hasOwnProperty("prerm-payload")) {
+		var tmpfile = tmpjs.tmpNameSync();
+		console.log('[FADe] Opening file with $EDITOR.');
+		fs.writeFileSync(tmpfile, dataraw['prerm_payload']);
+		child_process.spawnSync(process.env.EDITOR, [tmpfile], { stdio: 'inherit', detached: true});
+		dataraw['prerm_payload'] = fs.readFileSync(tmpfile).toString();
+		fs.unlinkSync(tmpfile);
+	}
+
+	var data = JSON.stringify(dataraw);
+	fs.writeFileSync(fadework+'/fade.json', data);
+}
+
 function init() {
 	//var test = (args.hasOwnProperty("test")) ? args['test'] : rls.question("What is Test?");
 	var path            = (args.hasOwnProperty("path"))            ? args['path']            : rls.question("[FADe] Locate your project's dir: ");
@@ -224,9 +279,6 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 	fs.mkdirSync(fadework+'/usr/lib/'+name, 0755);
 	   fs.writeFileSync(fadework+'/usr/lib/'+name+"/DO_NOT_PUT_FILE_ON_THIS_DIRECTORY", "ANYTHING IN THIS DIRECTORY IS WILL BE DISCARDED");
 	fs.mkdirSync(fadework+'/internal', 0755);
-	if (fs.existsSync(fadework+'/fade.json')) {
-		fs.unlinkSync(fadework+'/fade.json');
-	}
 	fs.writeFileSync(fadework+'/fade.json', data);
 	fs.writeFileSync(fadework+"/usr/bin/"+name, generate_runbin(name, cmdline, type));
 	console.log(`
