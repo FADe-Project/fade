@@ -1,14 +1,15 @@
 {
-  "name": "fade-cli",
+  "name": "fade",
   "version": "0.0.1",
-  "description": "FADe Project CLI",
+  "description": "FADe Project",
   "main": "main.js",
   "dependencies": {
     "fs": "^0.0.1-security",
+    "minimist": "^1.2.5",
     "path": "^0.12.7",
-    "rimraf": "^3.0.2",
     "readline-sync": "^1.4.10",
-    "minimist": "^1.2.5"
+    "rimraf": "^3.0.2",
+    "tmp": "^0.2.1"
   },
   "devDependencies": {},
   "scripts": {
