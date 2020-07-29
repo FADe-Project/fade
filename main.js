@@ -236,5 +236,4 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 [FADe] --edit [--postinst-payload] [--prerm-payload]
 [FADe] Thanks for using FADe Project.
 	`);
-
 }
