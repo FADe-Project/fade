@@ -1,0 +1,33 @@
+{
+  "name": "fade",
+  "version": "0.0.1",
+  "description": "FADe Project",
+  "main": "main.js",
+  "dependencies": {
+    "fs": "^0.0.1-security",
+    "minimist": "^1.2.5",
+    "path": "^0.12.7",
+    "readline-sync": "^1.4.10",
+    "recursive-copy": "^2.0.10",
+    "rimraf": "^3.0.2",
+    "targz": "^1.0.1",
+    "tmp": "^0.2.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fade-project/fade.git"
+  },
+  "author": "FADe Project",
+  "license": "GPL-3.0+",
+  "bugs": {
+    "url": "https://github.com/fade-project/fade/issues"
+  },
+  "homepage": "https://github.com/fade-project/fade#readme",
+  "bin": {
+    "app": "./main.js"
+  }
+}
