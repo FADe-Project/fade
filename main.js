@@ -145,7 +145,7 @@ function help(serious_mode) {
 	return_val += "\t--url \"https://example.com/\": Set your project's official website, Default is \"https://example.com\"\n";
 	return_val += "\t--priority optional: Set project's priority, Default is optional\n"
 	return_val += "\t--architecture all: Set project's destination system, Default is all\n";
-	return_val += "\t--depend[ancy] nodejs: Set project's dependancies; this parameter can be used multiple times."
+	return_val += "\t--depend[ancy] nodejs: Set project's dependancies; this parameter can be used multiple times.\n"
 	return_val += "\t--cmdline \"node main.js\": Set your project's run command\n";
 	return_val += "\t--maintainer-name \"John Doe\": Set maintainer's name\n";
 	return_val += "\t--maintainer-email \"john@example.com\": Set maintainer's email address\n";
