@@ -16,7 +16,6 @@ var args = process.argv.slice(2);
 var rls = require('readline-sync');
 var ln = '\n';
 var fs = require("fs");
-var path = require("path");
 var rimraf = require("rimraf");
 var args = require('minimist')(process.argv.slice(2), {
     alias: {
@@ -121,12 +120,7 @@ function ret_default(key, req_default) {
 }
 function main() {
 	//console.debug(args);
-	if(args.hasOwnProperty("version")) {
-		console.log("FADe Project - CLI Edition / " + fade_version);
-		console.log();
-		console.log("This program is free software, Please refer LICENCE to detail");
-		console.log("Copyright (C) FADe Project, All rights reserved.");
-	}else if(args.hasOwnProperty("help")) {
+	if(args.hasOwnProperty("help")) {
 		console.log(help(false));
 	}else if(args.hasOwnProperty("init")) {
 		init();
@@ -140,10 +134,12 @@ function main() {
 }
 function help(serious_mode) {
 	var return_val = "";
-	return_val += serious_mode?"":"FADe Project - CLI Edition / "+fade_version+" Help\n\n";
+	return_val += serious_mode?"":"FADe Project - CLI Edition / "+fade_version+" Help\n";
+	return_val += serious_mode?"":"This program is free software, Please refer LICENCE to detail\n";
+	return_val += serious_mode?"":"Copyright (C) FADe Project, All rights reserved.\n\n";
 	return_val += "--init [parameters]: Initialize your project.\n";
 	return_val += "\t--path \"/path/to/dir\": Locate your project.\n";
-	return_val += "\t--name \"Test Project\": Set your project's name\n"
+	return_val += "\t--name test-project: Set your project's name (package manager friendly)\n"
 	return_val += "\t--version 0.0.1: Set your project's version\n";
 	return_val += "\t--description \"The Test Project\": Set your project's description.\n";
 	return_val += "\t--url \"https://example.com/\": Set your project's official website, Default is \"https://example.com\"\n";
@@ -155,14 +151,13 @@ function help(serious_mode) {
 	return_val += "\t--maintainer-email \"john@example.com\": Set maintainer's email address\n";
 	return_val += "\t--type [systemd, isolated, normal]: Set project's type. see manual to detail.\n"
 	return_val += "\n"; 
-	return_val += "--version: Show version of FADe Project CLI Edition\n";
 	return_val += "--h[elp]: Show this help message.\n";
 	return_val += serious_mode?"":"\n\tMaybe this FADe has Super Cow Powers..?";
 	return return_val;
 }
 function init() {
 	//var test = (args.hasOwnProperty("test")) ? args['test'] : rls.question("What is Test?");
-	var fade_path       = (args.hasOwnProperty("path"))            ? args['path']            : rls.question("[FADe] Locate your project's dir: ");
+	var path            = (args.hasOwnProperty("path"))            ? args['path']            : rls.question("[FADe] Locate your project's dir: ");
 	var name            = (args.hasOwnProperty("name"))            ? args['name']            : rls.question("[FADe] Enter your project's name: ");
 	var version         = (args.hasOwnProperty("version"))         ? args['version']         : rls.question("[FADe] Enter your project's version: ");
 	var description     = (args.hasOwnProperty("description"))     ? args['description']     : rls.question("[FADe] Enter your project's description: ");
@@ -172,7 +167,7 @@ function init() {
 		var dependancy = "";
 		if (dependancy_raw == "ask") {
 			dependancy = rls.question("[FADe] Enter your project's dependancy(seperated by comma): ");
-		}else if(dependancy_raw.isArray()) {
+		}else if(Array.isArray(dependancy_raw)) {
 			dependancy_raw.forEach(function(item, index) {
 				dependancy += (index != 0)?", ":"";
 				dependancy += item;
@@ -185,7 +180,7 @@ function init() {
 	var maintainer_name = (args.hasOwnProperty("maintainer-name")) ? args['maintainer-name'] : rls.question("[FADe] Enter maintainer's name: ");
 	var maintainer_email= (args.hasOwnProperty("maintainer-email"))? args['maintainer-email']: rls.question("[FADe] Enter maintainer's email: ");
 	var type            = (args.hasOwnProperty("type"))            ? args['type']            : rls.question("[FADe] Select type (systemd, isolated, normal): ")
-	var fadework        = path.dirname(fade_path) + '/fadework';
+	var fadework        = path + '/fadework';
 	var postinst_payload=`
 ## You may delete this line, but if you love FADe, please don't remove it.
 echo "Powered by Fully Automated Distribution enhanced (FADe)"
@@ -217,17 +212,11 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 		postinst_payload: postinst_payload,
 		prerm_payload: prerm_payload
 	});
+	if (fs.existsSync(fadework)) {
+		rimraf.sync(fadework);
+	}
 	if (!fs.existsSync(fadework)) {
-		fs.mkfadeworkSync(fadework, 0755);
-	}
-	if (fs.existsSync(fadework+'/usr')) {
-		rimraf.sync(fadework+'/usr');
-	}
-	if (fs.existsSync(fadework+'/internal')) {
-		rimraf.sync(fadework+'/internal');
-	}
-	if (fs.existsSync(fadework+'/internal-sh')) {
-		rimraf.sync(fadework+'/internal-sh');
+		fs.mkdirSync(fadework, 0755);
 	}
 	fs.mkdirSync(fadework+'/usr', 0755);
 	fs.mkdirSync(fadework+'/usr/bin', 0755);
