@@ -178,16 +178,16 @@ function edit() {
 	} var fadework = path + '/fadework';
 	var dataraw = require(fadework+'/fade.json');
 
-	if(args.hasOwnProperty("name")) data['name'] = args['name'];
-	if(args.hasOwnProperty("description")) data['desc'] = args['description'];
-	if(args.hasOwnProperty("version")) data['version'] = args['version'];
-	if(args.hasOwnProperty("url")) data['url'] = args['url'];
-	if(args.hasOwnProperty("architecture")) data['architecture'] = args['architecture'];
-	if(args.hasOwnProperty("priority")) data['priority'] = args['priority'];
-	if(args.hasOwnProperty("cmdline")) data['run'] = args['cmdline'];
-	if(args.hasOwnProperty("maintainer-name")) data['maintainer_name'] = args['maintainer-name'];
-	if(args.hasOwnProperty("maintainer-email")) data['maintainer_email'] = args['maintainer-email'];
-	if(args.hasOwnProperty("type")) data['type'] = args['type'];
+	if(args.hasOwnProperty("name")) dataraw['name'] = args['name'];
+	if(args.hasOwnProperty("description")) dataraw['desc'] = args['description'];
+	if(args.hasOwnProperty("version")) dataraw['version'] = args['version'];
+	if(args.hasOwnProperty("url")) dataraw['url'] = args['url'];
+	if(args.hasOwnProperty("architecture")) dataraw['architecture'] = args['architecture'];
+	if(args.hasOwnProperty("priority")) dataraw['priority'] = args['priority'];
+	if(args.hasOwnProperty("cmdline")) dataraw['run'] = args['cmdline'];
+	if(args.hasOwnProperty("maintainer-name")) dataraw['maintainer_name'] = args['maintainer-name'];
+	if(args.hasOwnProperty("maintainer-email")) dataraw['maintainer_email'] = args['maintainer-email'];
+	if(args.hasOwnProperty("type")) dataraw['type'] = args['type'];
 	/* Dependancy Configuration here */
 	if(args.hasOwnProperty("postinst-payload")) {
 		var tmpfile = tmpjs.tmpNameSync();
@@ -208,6 +208,7 @@ function edit() {
 
 	var data = JSON.stringify(dataraw);
 	fs.writeFileSync(fadework+'/fade.json', data);
+	console.log("[FADe] Your amendments were reflected.");
 }
 
 function init() {
