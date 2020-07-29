@@ -68,7 +68,7 @@ function generate_runbin(name, cmdline, type) {
         str += "exec sudo -H -u " + name + " " + cmdline + " $@\n";
     }
     if(type == "normal") {
-        str += "bash -c \"cd /usr/lib/"+name+";"+cmdline+"\"\n";
+        str += "bash -c \"cd /usr/lib/"+name+";"+cmdline+" $@\"\n";
     }
     //console.log("RunBin File: \n"+str);
     return str;
