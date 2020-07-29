@@ -245,13 +245,13 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 ## If you need run as your user (if you're using systemd or isolated type) please use:
 ## sudo -H -u (PROJECT NAME) (COMMAND)
 
-	`;
+`;
 	var prerm_payload   =`
 ## Insert your pre-remove script here.
 ## If you need run as your user (if you're using systemd or isolated type) please use:
 ## sudo -H -u (PROJECT NAME) (COMMAND)
-	
-	`;
+
+`;
 
 	var data = JSON.stringify({
         name: name,
