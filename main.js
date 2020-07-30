@@ -33,17 +33,18 @@ var args = require('minimist')(process.argv.slice(2), {
 });
 main();
 
-function generate_ar_header(filename, timestamp, owner_id, group_id, oct_filemode, filesize) {
-    // REF: https://en.wikipedia.org/wiki/Ar_%28Unix%29
+function generate_ar_header(filename, timestamp, owner_id, group_id, filemode, filesize) {
+	// REF: https://en.wikipedia.org/wiki/Ar_%28Unix%29
+	// REF2: xxd -g 1 fade_0.0.1-beta_all.deb
     var buf = Buffer.alloc(60, 0x20); // fill with space
     var fs = require('fs');
 
-    buf.write(filename, 0); // 0 - 16 byte: File Name
-    buf.writeUInt32LE(timestamp, 16); // 16 - 28 byte: Timestamp (1972-11-21 = 91152000)
-    buf.writeUInt32LE(owner_id, 28); // 28 - 34 byte: Owner ID
-    buf.writeUInt32LE(group_id, 34); // 34 - 40 byte: Group ID
-    buf.writeUInt32LE(oct_filemode, 40); // 40 - 48 byte: File Mode (WARNING: OCTAL!!)
-    buf.writeUInt32LE(filesize, 48); // 48 - 58 byte: File Size
+    buf.write(filename.toString(), 0); // 0 - 16 byte: File Name
+    buf.write(timestamp.toString(), 16); // 16 - 28 byte: Timestamp (1972-11-21 = 91152000)
+    buf.write(owner_id.toString(), 28); // 28 - 34 byte: Owner ID
+    buf.write(group_id.toString(), 34); // 34 - 40 byte: Group ID
+    buf.write(filemode.toString(), 40); // 40 - 48 byte: File Mode (WARNING: OCTAL!!)
+    buf.write(filesize.toString(), 48); // 48 - 58 byte: File Size
     buf.write('`\n', 58); // 58 - 60 Byte: End of Header
     return buf;
 }
@@ -252,11 +253,11 @@ function create_deb() {
 			// TODO: ar w/o external binary
 			var magic_header = Buffer.from("!<arch>\n");
 			var debian_binary_content = Buffer.from("2.0\n");
-			var debian_binary_header = generate_ar_header("debian-binary", Math.floor(Date.now()/1000), 0, 0, 0100644, debian_binary_content.length);
+			var debian_binary_header = generate_ar_header("debian-binary", Math.floor(Date.now()/1000), 0, 0, 644, debian_binary_content.length);
 			var control_tar_gz_content = fs.readFileSync(fadework+"/temp/control.tar.gz");
-			var control_tar_gz_header = generate_ar_header("control.tar.gz", Math.floor(Date.now()/1000), 0, 0, 0100644, control_tar_gz_content.length);
+			var control_tar_gz_header = generate_ar_header("control.tar.gz", Math.floor(Date.now()/1000), 0, 0, 644, control_tar_gz_content.length);
 			var data_tar_gz_content = fs.readFileSync(fadework+"/temp/data.tar.gz");
-			var data_tar_gz_header = generate_ar_header("data.tar.gz", Math.floor(Date.now()/1000), 0, 0, 0100644, data_tar_gz_content.length);
+			var data_tar_gz_header = generate_ar_header("data.tar.gz", Math.floor(Date.now()/1000), 0, 0, 644, data_tar_gz_content.length);
 			var totalLength = magic_header.length+debian_binary_header.length+debian_binary_content.length+control_tar_gz_header.length+control_tar_gz_content.length+data_tar_gz_header.length+data_tar_gz_content.length;
 			fs.writeFileSync(output, Buffer.concat([magic_header, debian_binary_header, debian_binary_content, control_tar_gz_header, control_tar_gz_content, data_tar_gz_header, data_tar_gz_content], totalLength));
 
