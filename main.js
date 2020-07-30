@@ -25,7 +25,9 @@ var args = require('minimist')(process.argv.slice(2), {
         h: 'help',
 		v: 'verbose',
 		o: 'output',
-		depend: 'dependancy',
+		i: 'input',
+		depend: 'dependency',
+		dependancy: 'dependency',
 		deb: 'create-deb'
     }
 });
@@ -163,14 +165,16 @@ function help(serious_mode) {
 	return_val += "\t--url \"https://example.com/\": Set your project's official website, Default is \"https://example.com\"\n";
 	return_val += "\t--priority optional: Set project's priority, Default is optional\n"
 	return_val += "\t--architecture all: Set project's destination system, Default is all\n";
-	return_val += "\t--depend[ancy] nodejs: Set project's dependancies; this parameter can be used multiple times.\n"
+	return_val += "\t--depend[ency] nodejs: Set project's dependancies; this parameter can be used multiple times.\n"
 	return_val += "\t--cmdline \"node main.js\": Set your project's run command\n";
 	return_val += "\t--maintainer-name \"John Doe\": Set maintainer's name\n";
 	return_val += "\t--maintainer-email \"john@example.com\": Set maintainer's email address\n";
 	return_val += "\t--type [systemd, isolated, normal]: Set project's type. see manual to detail.\n\n"
 	return_val += "--edit [parameters]: Edit your project's configuration with --init's parameters. Additional parameters:\n"
 	return_val += "\t--postinst-payload: Edit Post-Install Script's payload with your preferred editor.\n"
-	return_val += "\t--prerm-payload: Edit Pre-Remove Script's payload with your preferred editor.\n\n"
+	return_val += "\t--prerm-payload: Edit Pre-Remove Script's payload with your preferred editor.\n"
+	return_val += "\t--input filename: Use file as postinst/prerm payload\n";
+	return_val += "\t--depend[ency]: No effect, Another parameter to edit dependency will be provided in future releases.\n";
 	return_val += "--[create-]deb [parameters]: Create .deb to Install your project to Debian-based systems\n";
 	return_val += "\t--path \"/path/to/dir\": Locate your project.\n";
 	return_val += "\t--o[utput] \"/path/to/dir\": Change output deb's location, Default is project directory.\n";
@@ -273,22 +277,30 @@ function edit() {
 	if(args.hasOwnProperty("maintainer-name")) dataraw['maintainer_name'] = args['maintainer-name'];
 	if(args.hasOwnProperty("maintainer-email")) dataraw['maintainer_email'] = args['maintainer-email'];
 	if(args.hasOwnProperty("type")) dataraw['type'] = args['type'];
-	/* Dependancy Configuration here */
+	/* Dependency Configuration here */
 	if(args.hasOwnProperty("postinst-payload")) {
-		var tmpfile = tmpjs.tmpNameSync();
-		console.log('[FADe] Opening file with $EDITOR.');
-		fs.writeFileSync(tmpfile, dataraw['postinst_payload']);
-		child_process.spawnSync(process.env.EDITOR, [tmpfile], { stdio: 'inherit', detached: true});
-		dataraw['postinst_payload'] = fs.readFileSync(tmpfile).toString();
-		fs.unlinkSync(tmpfile);
+		if(args.hasOwnProperty("input")) {
+			dataraw['postinst_payload'] = fs.readFileSync(args['input']).toString();
+		}else{
+			var tmpfile = tmpjs.tmpNameSync();
+			console.log('[FADe] Opening file with $EDITOR.');
+			fs.writeFileSync(tmpfile, dataraw['postinst_payload']);
+			child_process.spawnSync(process.env.EDITOR, [tmpfile], { stdio: 'inherit', detached: true});
+			dataraw['postinst_payload'] = fs.readFileSync(tmpfile).toString();
+			fs.unlinkSync(tmpfile);
+		}
 	}
 	if(args.hasOwnProperty("prerm-payload")) {
-		var tmpfile = tmpjs.tmpNameSync();
-		console.log('[FADe] Opening file with $EDITOR.');
-		fs.writeFileSync(tmpfile, dataraw['prerm_payload']);
-		child_process.spawnSync(process.env.EDITOR, [tmpfile], { stdio: 'inherit', detached: true});
-		dataraw['prerm_payload'] = fs.readFileSync(tmpfile).toString();
-		fs.unlinkSync(tmpfile);
+		if(args.hasOwnProperty("input")) {
+			dataraw['postinst_payload'] = fs.readFileSync(args['input']).toString();
+		}else{
+			var tmpfile = tmpjs.tmpNameSync();
+			console.log('[FADe] Opening file with $EDITOR.');
+			fs.writeFileSync(tmpfile, dataraw['prerm_payload']);
+			child_process.spawnSync(process.env.EDITOR, [tmpfile], { stdio: 'inherit', detached: true});
+			dataraw['prerm_payload'] = fs.readFileSync(tmpfile).toString();
+			fs.unlinkSync(tmpfile);
+		}
 	}
 
 	var data = JSON.stringify(dataraw);
@@ -304,17 +316,17 @@ function init() {
 	var description     = (args.hasOwnProperty("description"))     ? args['description']     : rls.question("[FADe] Enter your project's description: ");
 	var url             = (args.hasOwnProperty("url"))             ? args['url']             : ret_default("url", "https://example.com/");
 	var architecture    = (args.hasOwnProperty("architecture"))    ? args['architecture']    : ret_default("architecture", "all");
-	var dependancy_raw  = (args.hasOwnProperty("dependancy"))      ? args['dependancy']      : ret_default("dependancy", "ask");
-		var dependancy = "";
-		if (dependancy_raw == "ask") {
-			dependancy = rls.question("[FADe] Enter your project's dependancy(seperated by comma): ");
-		}else if(Array.isArray(dependancy_raw)) {
-			dependancy_raw.forEach(function(item, index) {
-				dependancy += (index != 0)?", ":"";
-				dependancy += item;
+	var dependency_raw  = (args.hasOwnProperty("dependency"))      ? args['dependency']      : ret_default("dependency", "ask");
+		var dependency = "";
+		if (dependency_raw == "ask") {
+			dependency = rls.question("[FADe] Enter your project's dependency(seperated by comma): ");
+		}else if(Array.isArray(dependency_raw)) {
+			dependency_raw.forEach(function(item, index) {
+				dependency += (index != 0)?", ":"";
+				dependency += item;
 			});
 		}else{
-			dependancy = dependancy_raw;
+			dependency = dependency_raw;
 		}
 	var priority        = (args.hasOwnProperty("priority"))        ? args['priority']        : ret_default("priority", "optional");
 	var cmdline         = (args.hasOwnProperty("cmdline"))         ? args['cmdline']         : rls.question("[FADe] Enter your project's cmdline: ");
@@ -344,7 +356,7 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 		desc: description,
 		url: url,
 		architecture: architecture,
-		depends: dependancy,
+		depends: dependency,
 		priority: priority,
 		run: cmdline,
 		maintainer_name: maintainer_name,
