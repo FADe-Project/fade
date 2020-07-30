@@ -33,6 +33,21 @@ var args = require('minimist')(process.argv.slice(2), {
 });
 main();
 
+function generate_ar_header(filename, timestamp, owner_id, group_id, oct_filemode, filesize) {
+    // REF: https://en.wikipedia.org/wiki/Ar_%28Unix%29
+    var buf = Buffer.alloc(60);
+    var fs = require('fs');
+
+    buf.write(filename, 0); // 0 - 16 byte: File Name
+    buf.writeUInt32LE(timestamp, 16); // 16 - 28 byte: Timestamp (1972-11-21 = 91152000)
+    buf.writeUInt32LE(owner_id, 28); // 28 - 34 byte: Owner ID
+    buf.writeUInt32LE(group_id, 34); // 34 - 40 byte: Group ID
+    buf.writeUInt32LE(oct_filemode, 40); // 40 - 48 byte: File Mode (WARNING: OCTAL!!)
+    buf.writeUInt32LE(filesize, 48); // 48 - 58 byte: File Size
+    buf.write('`\n', 58); // 58 - 60 Byte: End of Header
+    return buf;
+}
+
 function promise_targz_compress(opt) {
     return new Promise((res, rej) => {
         targz.compress(opt, function(err) {
@@ -177,7 +192,7 @@ function help(serious_mode) {
 	return_val += "\t--depend[ency]: No effect, Another parameter to edit dependency will be provided in future releases.\n";
 	return_val += "--[create-]deb [parameters]: Create .deb to Install your project to Debian-based systems\n";
 	return_val += "\t--path \"/path/to/dir\": Locate your project.\n";
-	return_val += "\t--o[utput] \"/path/to/dir\": Change output deb's location, Default is project directory.\n";
+	return_val += "\t--o[utput] [/path/to/dir/]output.deb: Change output deb, Default is name_version_arch.deb on project directory.\n";
 	return_val += "--h[elp]: Show this help message.\n";
 	return_val += serious_mode?"":"\n\tMaybe this FADe has Super Cow Powers..?";
 	return return_val;
@@ -201,7 +216,7 @@ function create_deb() {
 	var name = dataraw['name'];
 	var version = dataraw['version'];
 	var architecture = dataraw['architecture'];
-	var deb_loc = args.hasOwnProperty("output") ? args['output'] : ret_default("output", path);
+	var output = args.hasOwnProperty("output") ? args['output'] : ret_default("output", path+"/"+name+"_"+version+"_"+architecture+".deb");
 	function finalize() {
 		rimraf.sync(fadework+'/internal');
 		rimraf.sync(fadework+'/temp');
@@ -235,8 +250,16 @@ function create_deb() {
 		var promise_data = promise_targz_compress({src: fadework, dest: fadework+"/temp/data.tar.gz", tar: {entries: ["usr/"]}});
 		Promise.all([promise_control, promise_data]).then(function() {
 			// TODO: ar w/o external binary
-			child_process.execSync("ar r "+deb_loc+"/"+name+"_"+version+"_"+architecture+".deb "+fadework+"/temp/debian-binary "+fadework+"/temp/control.tar.gz "+fadework+"/temp/data.tar.gz");
-			console.log("[FADe] "+deb_loc+"/"+name+"_"+version+"_"+architecture+".deb Created. Install on your system!");
+			var magic_header = Buffer.from("!<arch>\n");
+			var debian_binary_content = Buffer.from("2.0\n");
+			var debian_binary_header = generate_ar_header("debian-binary", Date.now(), 0, 0, 0100644, debian_binary_content.length);
+			var control_tar_gz_content = fs.readFileSync(fadework+"/temp/control.tar.gz");
+			var control_tar_gz_header = generate_ar_header("control.tar.gz", Date.now(), 0, 0, 0100644, control_tar_gz_content.length);
+			var data_tar_gz_content = fs.readFileSync(fadework+"/temp/data.tar.gz");
+			var data_tar_gz_header = generate_ar_header("data.tar.gz", Date.now(), 0, 0, 0100644, data_tar_gz_content.length);
+			var totalLength = magic_header.length+debian_binary_header.length+debian_binary_content.length+control_tar_gz_header.length+control_tar_gz_content.length+data_tar_gz_header.length+data_tar_gz_content.length;
+			
+			console.log("[FADe] "+output+" Created. Install on your system!");
 			finalize();
 		}).catch(function(err){
 			console.error("[FADe] Compress Failed.");
