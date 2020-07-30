@@ -35,7 +35,7 @@ main();
 
 function generate_ar_header(filename, timestamp, owner_id, group_id, oct_filemode, filesize) {
     // REF: https://en.wikipedia.org/wiki/Ar_%28Unix%29
-    var buf = Buffer.alloc(60);
+    var buf = Buffer.alloc(60, 0x20); // fill with space
     var fs = require('fs');
 
     buf.write(filename, 0); // 0 - 16 byte: File Name
