@@ -258,7 +258,8 @@ function create_deb() {
 			var data_tar_gz_content = fs.readFileSync(fadework+"/temp/data.tar.gz");
 			var data_tar_gz_header = generate_ar_header("data.tar.gz", Math.floor(Date.now()/1000), 0, 0, 0100644, data_tar_gz_content.length);
 			var totalLength = magic_header.length+debian_binary_header.length+debian_binary_content.length+control_tar_gz_header.length+control_tar_gz_content.length+data_tar_gz_header.length+data_tar_gz_content.length;
-			
+			fs.writeFileSync(output, Buffer.concat([magic_header, debian_binary_header, debian_binary_content, control_tar_gz_header, control_tar_gz_content, data_tar_gz_header, data_tar_gz_content], totalLength));
+
 			console.log("[FADe] "+output+" Created. Install on your system!");
 			finalize();
 		}).catch(function(err){
