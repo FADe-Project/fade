@@ -1,5 +1,5 @@
 # FADe Project
-Writing...
+FADe Project Converts your project into a package.
 
 ## Known Issues
 * Relative path not working (isolated and normal type)
