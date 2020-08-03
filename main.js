@@ -16,6 +16,7 @@ var rls = require('readline-sync');
 var ln = '\n';
 var tmpjs = require('tmp');
 var child_process = require('child_process');
+var os = require("os");
 var fs = require("fs");
 var rimraf = require("rimraf");
 var copy = require('recursive-copy');
@@ -277,11 +278,38 @@ function create_deb() {
 	});
 }
 
-function edit() {
+function open_editor(filename, filedata) {
 	if(process.env.EDITOR == undefined) {
-		console.warn("[FADe] $EDITOR not set, defaulting to vi");
-		process.env.EDITOR = "vi"
+		if(process.platform() == "win32") {
+			var release_array = os.release().split(".");
+			if(release_array[0] == "10" && release_array[2] >= 17763) { // >= Windows 10 1809
+				console.warn("[FADe] %EDITOR% not set, defaulting to notepad.exe");
+				process.env.EDITOR = "notepad.exe"
+			}else{
+				console.error(`[FADe] %EDITOR% not set and Your notepad.exe dosen't support LF Ending.
+Please download your preferred editor from the Internet. We recommend vim or nano
+ - Vim: https://www.vim.org/download.php#pc
+ - Nano: https://www.nano-editor.org/dist/win32-support/
+ 
+Put downloaded binary into C:\\Windows\\system32 or your working directory, and Please type before run FADe:
+> set EDITOR=(binary).exe`);
+				process.exit(9009);
+			}
+		}else{
+				console.warn("[FADe] $EDITOR not set, defaulting to vi");
+				process.env.EDITOR = "vi"
+		}
 	}
+	var tmpfile = tmpjs.tmpNameSync();
+	console.log('[FADe] Opening '+filename+' with $EDITOR.');
+	fs.writeFileSync(tmpfile, filedata);
+	child_process.spawnSync(process.env.EDITOR, [tmpfile], { stdio: 'inherit', detached: true});
+	var return_val = fs.readFileSync(tmpfile).toString();
+	fs.unlinkSync(tmpfile);
+	return return_val;
+}
+
+function edit() {
 	if(!args.hasOwnProperty("path")) {
 		console.error("[FADe] --edit can't be used without --path parameter.");
 		process.exit(1);
@@ -291,7 +319,6 @@ function edit() {
 		process.exit(1);
 	} var fadework = path + '/fadework';
 	var dataraw = require(fadework+'/fade.json');
-
 	if(args.hasOwnProperty("name")) dataraw['name'] = args['name'];
 	if(args.hasOwnProperty("description")) dataraw['desc'] = args['description'];
 	if(args.hasOwnProperty("version")) dataraw['version'] = args['version'];
@@ -307,24 +334,14 @@ function edit() {
 		if(args.hasOwnProperty("input")) {
 			dataraw['postinst_payload'] = fs.readFileSync(args['input']).toString();
 		}else{
-			var tmpfile = tmpjs.tmpNameSync();
-			console.log('[FADe] Opening file with $EDITOR.');
-			fs.writeFileSync(tmpfile, dataraw['postinst_payload']);
-			child_process.spawnSync(process.env.EDITOR, [tmpfile], { stdio: 'inherit', detached: true});
-			dataraw['postinst_payload'] = fs.readFileSync(tmpfile).toString();
-			fs.unlinkSync(tmpfile);
+			dataraw['postinst_payload'] = open_editor('postinst', dataraw['postinst_payload']);
 		}
 	}
 	if(args.hasOwnProperty("prerm-payload")) {
 		if(args.hasOwnProperty("input")) {
-			dataraw['postinst_payload'] = fs.readFileSync(args['input']).toString();
+			dataraw['prerm_payload'] = fs.readFileSync(args['input']).toString();
 		}else{
-			var tmpfile = tmpjs.tmpNameSync();
-			console.log('[FADe] Opening file with $EDITOR.');
-			fs.writeFileSync(tmpfile, dataraw['prerm_payload']);
-			child_process.spawnSync(process.env.EDITOR, [tmpfile], { stdio: 'inherit', detached: true});
-			dataraw['prerm_payload'] = fs.readFileSync(tmpfile).toString();
-			fs.unlinkSync(tmpfile);
+			dataraw['prerm_payload'] = open_editor('prerm', dataraw['prerm_payload']);
 		}
 	}
 
