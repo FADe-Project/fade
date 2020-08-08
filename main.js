@@ -251,11 +251,13 @@ function create_deb() {
 		var promise_control = promise_targz_compress({src: fadework+"/internal", dest: fadework+"/temp/control.tar.gz", tar: {entries: ["."]}});
 		var promise_data = promise_targz_compress({src: fadework, dest: fadework+"/temp/data.tar.gz", tar: {entries: ["usr/"]}});
 		Promise.all([promise_control, promise_data]).then(function() {
-			// TODO: ar w/o external binary
 			var magic_header = Buffer.from("!<arch>\n");
 			var debian_binary_content = Buffer.from("2.0\n");
 			var debian_binary_header = generate_ar_header("debian-binary", Math.floor(Date.now()/1000), 0, 0, 100644, debian_binary_content.length);
 			var control_tar_gz_content = fs.readFileSync(fadework+"/temp/control.tar.gz");
+			if (control_tar_gz_content.length % 2 !== 0) {
+				control_tar_gz_content = Buffer.concat([control_tar_gz_content, Buffer.alloc(0,0)],control_tar_gz_content.length+1);
+			}
 			var control_tar_gz_header = generate_ar_header("control.tar.gz", Math.floor(Date.now()/1000), 0, 0, 100644, control_tar_gz_content.length);
 			var data_tar_gz_content = fs.readFileSync(fadework+"/temp/data.tar.gz");
 			var data_tar_gz_header = generate_ar_header("data.tar.gz", Math.floor(Date.now()/1000), 0, 0, 100644, data_tar_gz_content.length);
