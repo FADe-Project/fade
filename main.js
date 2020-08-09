@@ -282,7 +282,7 @@ function create_deb() {
 
 function open_editor(filename, filedata) {
 	if(process.env.EDITOR == undefined) {
-		if(process.platform() == "win32") {
+		if(process.platform == "win32") {
 			var release_array = os.release().split(".");
 			if(release_array[0] == "10" && release_array[2] >= 17763) { // >= Windows 10 1809
 				console.warn("[FADe] %EDITOR% not set, defaulting to notepad.exe");
