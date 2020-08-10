@@ -256,10 +256,13 @@ function create_deb() {
 			var debian_binary_header = generate_ar_header("debian-binary", Math.floor(Date.now()/1000), 0, 0, 100644, debian_binary_content.length);
 			var control_tar_gz_content = fs.readFileSync(fadework+"/temp/control.tar.gz");
 			if (control_tar_gz_content.length % 2 !== 0) {
-				control_tar_gz_content = Buffer.concat([control_tar_gz_content, Buffer.alloc(0,0)],control_tar_gz_content.length+1);
+				control_tar_gz_content = Buffer.concat([control_tar_gz_content, Buffer.alloc(1,0)],control_tar_gz_content.length+1);
 			}
 			var control_tar_gz_header = generate_ar_header("control.tar.gz", Math.floor(Date.now()/1000), 0, 0, 100644, control_tar_gz_content.length);
 			var data_tar_gz_content = fs.readFileSync(fadework+"/temp/data.tar.gz");
+			if (data_tar_gz_content.length % 2 !== 0) {
+				data_tar_gz_content = Buffer.concat([data_tar_gz_content, Buffer.alloc(1,0)],data_tar_gz_content.length+1);
+			}
 			var data_tar_gz_header = generate_ar_header("data.tar.gz", Math.floor(Date.now()/1000), 0, 0, 100644, data_tar_gz_content.length);
 			var totalLength = magic_header.length+debian_binary_header.length+debian_binary_content.length+control_tar_gz_header.length+control_tar_gz_content.length+data_tar_gz_header.length+data_tar_gz_content.length;
 			fs.writeFileSync(output, Buffer.concat([magic_header, debian_binary_header, debian_binary_content, control_tar_gz_header, control_tar_gz_content, data_tar_gz_header, data_tar_gz_content], totalLength));
