@@ -105,3 +105,7 @@ dist
 
 # Experiment file
 experiment.js
+
+# fadework
+fadework/
+.fadework/
