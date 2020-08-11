@@ -8,5 +8,5 @@ FADe Project Converts your project into a package.
 * Create Redhat Package
 
 ## License
- * FADe Project is distributed under GNU GPLv3+
+ * FADe Project is distributed under MIT License.
  * Please refer [OPEN_SOURCE.md](OPEN_SOURCE.md) for open source programs/libraries that used by FADe Project.

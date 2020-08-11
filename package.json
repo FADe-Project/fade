@@ -1,7 +1,7 @@
 {
   "name": "fade",
   "version": "0.0.1",
-  "description": "FADe Project",
+  "description": "A project which everyone can make linux package easily.",
   "main": "main.js",
   "dependencies": {
     "minimist": "^1.2.5",
@@ -19,8 +19,8 @@
     "type": "git",
     "url": "git+https://github.com/fade-project/fade.git"
   },
-  "author": "FADe Project",
-  "license": "GPL-3.0+",
+  "author": "ldmsys",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/fade-project/fade/issues"
   },

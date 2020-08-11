@@ -7,8 +7,8 @@
 //                                   |___/              
 //
 //  FADe Project (CLI Edition) Source code
-//  This program is free software, please refer LICENCE to detail.
-//  Copyright (C) FADe-Project, All rights reserved.
+//  This program is distributed under MIT License.
+//  Copyright (C) ldmsys, All rights reserved.
 //  WARNING: This Source code IS COMPLETELY spaghetti code.
 
 const fade_version = "Git Version";
@@ -172,8 +172,8 @@ function main() {
 function help(serious_mode) {
 	var return_val = "";
 	return_val += serious_mode?"":"FADe Project - CLI Edition / "+fade_version+" Help\n";
-	return_val += serious_mode?"":"This program is free software under GNU GPLv3+, Please refer LICENCE to detail\n";
-	return_val += serious_mode?"":"Copyright (C) FADe Project, All rights reserved.\n\n";
+	return_val += serious_mode?"":"This program is distributed under MIT License.\n";
+	return_val += serious_mode?"":"Copyright (C) ldmsys, All rights reserved.\n\n";
 	return_val += "--init [parameters]: Initialize your project.\n";
 	return_val += "\t--path \"/path/to/dir\": Locate your project.\n";
 	return_val += "\t--name test-project: Set your project's name (package manager friendly)\n"
