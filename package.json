@@ -4,9 +4,7 @@
   "description": "FADe Project",
   "main": "main.js",
   "dependencies": {
-    "fs": "^0.0.1-security",
     "minimist": "^1.2.5",
-    "path": "^0.12.7",
     "readline-sync": "^1.4.10",
     "recursive-copy": "^2.0.10",
     "rimraf": "^3.0.2",
