@@ -379,13 +379,8 @@ function create_deb() {
 	fs.chmodSync(fadework+"/internal/prerm", 0755);
 	fs.writeFileSync(fadework+"/temp/debian-binary", "2.0\n");
 	fs.chmodSync(fadework+"/temp/debian-binary", 0644);	
-<<<<<<< HEAD
-	var promise_copy = copy(path, fadework+'/usr/lib/'+name, {overwrite: true,	expand: true, dot: true, junk: true, filter: ['**/*', '!fadework', '!fadework/*']});
-	promise_copy.then(() => {
-=======
 	var promise_copy = copy(path, fadework+'/usr/lib/'+name, {overwrite: true,	expand: true, dot: true, junk: true, filter: ['**/*', '!.fadework', '!.fadework/*']});
 	promise_copy.then(function() {
->>>>>>> master
 		var promise_control = promise_targz_compress({src: fadework+"/internal", dest: fadework+"/temp/control.tar.gz", tar: {entries: ["."]}});
 		var promise_data = promise_targz_compress({src: fadework, dest: fadework+"/temp/data.tar.gz", tar: {entries: ["usr/"]}});
 		Promise.all([promise_control, promise_data]).then(() => {
