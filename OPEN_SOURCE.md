@@ -1,5 +1,5 @@
 ## FADe Project
- * FADe Project is distributed under GNU GPLv3+
+ * FADe Project is distributed under MIT License.
  * FADe Project uses different open source programs/libraries.
   * We thanks to developers of these programs/libraries.
  * FADe Project respects every developer's rights.
