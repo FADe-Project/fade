@@ -205,10 +205,20 @@ function create_deb() {
 		console.error("[FADe] --create-deb can't be used without --path parameter.");
 		process.exit(1);
 	} var path = args['path'];
-	if(!fs.existsSync(path+'/fadework')) {
+	if(fs.existsSync(path+"/fadework")) {
+		if(fs.existsSync(path+"/fadework/fade-electron.json") || fs.existsSync(path+"/fadework/internal-sh")) {
+			console.error("[FADe] Sorry, but FADe Project is reborn from scratch, so it's not compatible with old configuration files.");
+			console.error("[FADe] Please do --init.");
+			process.exit(1);
+		}else{
+			console.log("[FADe] Found Legacy FADe Directory, migrating...");
+			fs.renameSync(path+"/fadework", path+"/.fadework");
+		}
+	}
+	if(!fs.existsSync(path+'/.fadework')) {
 		console.error("[FADe] Do --init first, please.");
 		process.exit(1);
-	} var fadework = path + '/fadework';
+	} var fadework = path + '/.fadework';
 	var dataraw = require(fadework+'/fade.json');
 	var control = generate_deb_control(dataraw['name'], dataraw['version'], dataraw['maintainer_name'], dataraw['maintainer_email'], dataraw['depends'],
 										dataraw['architecture'], dataraw['priority'], dataraw['url'], dataraw['desc']);
@@ -246,7 +256,7 @@ function create_deb() {
 	fs.chmodSync(fadework+"/internal/prerm", 0755);
 	fs.writeFileSync(fadework+"/temp/debian-binary", "2.0\n");
 	fs.chmodSync(fadework+"/temp/debian-binary", 0644);	
-	var promise_copy = copy(path, fadework+'/usr/lib/'+name, {overwrite: true,	expand: true, dot: true, junk: true, filter: ['**/*', '!fadework', '!fadework/*']});
+	var promise_copy = copy(path, fadework+'/usr/lib/'+name, {overwrite: true,	expand: true, dot: true, junk: true, filter: ['**/*', '!.fadework', '!.fadework/*']});
 	promise_copy.then(function() {
 		var promise_control = promise_targz_compress({src: fadework+"/internal", dest: fadework+"/temp/control.tar.gz", tar: {entries: ["."]}});
 		var promise_data = promise_targz_compress({src: fadework, dest: fadework+"/temp/data.tar.gz", tar: {entries: ["usr/"]}});
@@ -319,10 +329,20 @@ function edit() {
 		console.error("[FADe] --edit can't be used without --path parameter.");
 		process.exit(1);
 	} var path = args['path'];
-	if(!fs.existsSync(path+'/fadework')) {
+	if(fs.existsSync(path+"/fadework")) {
+		if(fs.existsSync(path+"/fadework/fade-electron.json") || fs.existsSync(path+"/fadework/internal-sh")) {
+			console.error("[FADe] Sorry, but FADe Project is reborn from scratch, so it's not compatible with old configuration files.");
+			console.error("[FADe] Please do --init.");
+			process.exit(1);
+		}else{
+			console.log("[FADe] Found Legacy FADe Directory, migrating...");
+			fs.renameSync(path+"/fadework", path+"/.fadework");
+		}
+	}
+	if(!fs.existsSync(path+'/.fadework')) {
 		console.error("[FADe] Do --init first, please.");
 		process.exit(1);
-	} var fadework = path + '/fadework';
+	} var fadework = path + '/.fadework';
 	var dataraw = require(fadework+'/fade.json');
 	if(args.hasOwnProperty("name")) dataraw['name'] = args['name'];
 	if(args.hasOwnProperty("description")) dataraw['desc'] = args['description'];
@@ -380,7 +400,7 @@ function init() {
 	var maintainer_name = (args.hasOwnProperty("maintainer-name")) ? args['maintainer-name'] : rls.question("[FADe] Enter maintainer's name: ");
 	var maintainer_email= (args.hasOwnProperty("maintainer-email"))? args['maintainer-email']: rls.question("[FADe] Enter maintainer's email: ");
 	var type            = (args.hasOwnProperty("type"))            ? args['type']            : rls.question("[FADe] Select type (systemd, isolated, normal): ")
-	var fadework        = path + '/fadework';
+	var fadework        = path + '/.fadework';
 	var postinst_payload=`
 ## You may delete this line, but if you love FADe, please don't remove it.
 echo "Powered by Fully Automated Distribution enhanced (FADe)"
@@ -412,6 +432,9 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 		postinst_payload: postinst_payload,
 		prerm_payload: prerm_payload
 	});
+	if (fs.existsSync(path+"/fadework")) {
+		rimraf.sync(path+"/fadework");
+	}
 	if (fs.existsSync(fadework)) {
 		rimraf.sync(fadework);
 	}
