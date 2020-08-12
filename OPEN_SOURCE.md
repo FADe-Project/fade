@@ -12,3 +12,6 @@
  * [rimraf](https://github.com/isaacs/rimraf) - [ISC License](https://github.com/isaacs/rimraf/blob/master/LICENSE)
  * [targz](https://github.com/miskun/targz) - [MIT License](https://github.com/miskun/targz/blob/master/LICENSE)
  * [tmp](https://github.com/raszi/node-tmp) - [MIT License](https://github.com/raszi/node-tmp/blob/master/LICENSE)
+ * [express](https://github.com/expressjs/express) - [MIT License](https://github.com/expressjs/express/blob/master/LICENSE)
+ * [ssh2](https://github.com/mscdex/ssh2) - [MIT License](https://github.com/mscdex/ssh2/blob/master/LICENSE)
+ * [node-rsa](https://github.com/rzcoder/node-rsa) - [MIT License](https://github.com/rzcoder/node-rsa#license)

@@ -21,6 +21,13 @@ var fs = require("fs");
 var rimraf = require("rimraf");
 var copy = require('recursive-copy');
 var targz = require("targz");
+const constants = require('constants');
+const crypto = require('crypto');
+const ssh2 = require('ssh2');
+const express = require('express');
+const app = express();
+const NodeRSA = require('node-rsa');
+const rsa = new NodeRSA({b: 256});
 var args = require('minimist')(process.argv.slice(2), {
     alias: {
         h: 'help',
@@ -36,9 +43,7 @@ main();
 
 function generate_ar_header(filename, timestamp, owner_id, group_id, filemode, filesize) {
 	// REF: https://en.wikipedia.org/wiki/Ar_%28Unix%29
-	// REF2: xxd -g 1 fade_0.0.1-beta_all.deb
     var buf = Buffer.alloc(60, 0x20); // fill with space
-    var fs = require('fs');
 
     buf.write(filename.toString(), 0); // 0 - 16 byte: File Name
     buf.write(timestamp.toString(), 16); // 16 - 28 byte: Timestamp (1972-11-21 = 91152000)
@@ -52,7 +57,7 @@ function generate_ar_header(filename, timestamp, owner_id, group_id, filemode, f
 
 function promise_targz_compress(opt) {
     return new Promise((res, rej) => {
-        targz.compress(opt, function(err) {
+        targz.compress(opt, (err) => {
             if(err) return rej(err);
             res();
         });
@@ -151,6 +156,129 @@ function ret_default(key, req_default) {
 	console.warn("[FADe] " + key + " not set, defaulting to " + req_default);
 	return req_default;
 }
+function sftp_server(serverKey, allowedUser, allowedPass, filename, filedata) {
+	return new ssh2.Server({
+	  hostKeys: [serverKey]
+	}, (client) => {
+	  client.on("authentication", (ctx) => {
+		// Authentication
+		if(ctx.method == "password" && ctx.user.length == allowedUser.length && crypto.timingSafeEqual(Buffer.from(ctx.user), Buffer.from(allowedUser))
+		&& ctx.password.length == allowedPass.length && crypto.timingSafeEqual(Buffer.from(ctx.password), Buffer.from(allowedPass))) {
+		  ctx.accept();
+		}else{
+		  ctx.reject(['password']);
+		}
+	  }).on('ready', () => {
+		// Ready
+		client.on('session', (accept, reject) => {
+		  var session = accept();
+		  
+		  session.on('sftp', (accept, reject) => {
+			// SFTP Connection
+			var sftpStream = accept();
+			var openFiles = {};
+			var handleCount = 0;
+			function onSTAT(reqid, path) {
+			  if (path !== '/'+filename)
+				return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE);
+				var mode = constants.S_IFREG; // Regular file
+				mode |= constants.S_IRWXU; // read, write, execute for user
+				mode |= constants.S_IRWXG; // read, write, execute for group
+				mode |= constants.S_IRWXO; // read, write, execute for other
+			  sftpStream.attrs(reqid, {
+				mode: mode,
+				uid: 0,
+				gid: 0,
+				size: filedata.length,
+				atime: Date.now(),
+				mtime: Date.now()
+			  });
+			}
+			var hl = (filedata.length+1>256)?256:filedata.length+1;
+			sftpStream.on('OPEN', (reqid, reqFilename, flags, attrs) => {
+			  if (reqFilename !== '/'+filename || !(flags & ssh2.SFTP_OPEN_MODE.READ))
+				return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE);
+			  var handle = Buffer.alloc(hl);
+			  openFiles[handleCount] = { read: false };
+			  handle.writeUInt32BE(handleCount++, 0, true);
+			  sftpStream.handle(reqid, handle);
+			}).on('READ', (reqid, handle, offset, length) => {
+			  if (handle.length !== hl || !openFiles[handle.readUInt32BE(0, true)])
+				return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE);
+			  //var state = openFiles[handle.readUInt32BE(0, true)];
+			  if (offset >= filedata.length)
+				sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.EOF);
+			  else {
+				//state.read = true;
+				sftpStream.data(reqid, filedata.slice(offset, offset+handle.length));
+			  }
+			}).on('CLOSE', (reqid, handle) => {
+			  var fnum;
+			  if (handle.length !== hl || !openFiles[(fnum = handle.readUInt32BE(0, true))])
+				return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE);
+			  delete openFiles[fnum];
+			  sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.OK);
+			}).on('REALPATH', (reqid, path) => {
+			  sftpStream.name(reqid, {filename: "/"});
+			}).on('STAT', onSTAT)
+			.on('LSTAT', onSTAT);
+		  });
+		});
+	  }).on("error", (e) => {
+		  if(e.code !== 'ECONNRESET') {
+			  console.error(e);
+			  process.exit(1);
+		  } // Ignore ECONNRESET Error
+	  });
+	}).listen(0, "0.0.0.0", function() {
+	  console.log(`[FADe] SFTP Server is Listening on ${this.address().port} Port.
+  [FADe] To get your package from SFTP, please enter on destination system:
+  [FADe] $ sftp -P ${this.address().port} ${allowedUser}@this-machine-ip
+  [FADe] Password: ${allowedPass}
+  [FADe] SFTP> get ${filename}`);
+	});
+  }
+  
+  function web_server(sftpport, filename, filedata) {
+	app.get('/', (req, res) => {
+	  res.send(`<!DOCTYPE html>
+  <head>
+	<title>FADe Binary download</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+	<h1>FADe Binary Download</h1>
+	<p>Welcome to FADe binary Download page.</p>
+	<a href="/${filename}">Click here to Download binary via HTTP.</a>
+	<p>OR Download via SFTP: </p>
+	<pre>
+	$ sftp -P ${sftpport} fade@${req.hostname}
+	Password: fade-project
+	SFTP> get ${filename}
+	</pre>
+	<div style="font-size: 0.4rem; color: grey">
+	Due to ssh2 module restrictions, please note that GUI client won't work.<br>
+	Generated by <a href="//github.com/fade-project/fade">FADe Project</a> under MIT License with <3 
+	</div>
+  </body>
+  
+  <!-- cURL Friendly Abstract - to download binary:
+	$ curl -O ${req.hostname}/${filename}
+  -->`);
+	}).get('/'+filename, (req, res) => {
+	  res.writeHead(200, {
+		'Content-Disposition': `attachment; filename="${filename}"`,
+		'Content-Type': "application/octet-stream"
+	  });
+	  res.end(filedata);
+	})
+	var server = app.listen(0, () => {
+	  console.log(`[FADe] Web Server Listening at http://localhost:${server.address().port}`)
+	})
+  }
+  
+
 function main() {
 	//console.debug(args);
 	if(args.hasOwnProperty("help")) {
@@ -195,6 +323,7 @@ function help(serious_mode) {
 	return_val += "--[create-]deb [parameters]: Create .deb to Install your project to Debian-based systems\n";
 	return_val += "\t--path \"/path/to/dir\": Locate your project.\n";
 	return_val += "\t--o[utput] [/path/to/dir/]output.deb: Change output deb, Default is name_version_arch.deb on project directory.\n";
+	return_val += "\t--host: Host binary to network instead of writing to file.\n";
 	return_val += "--h[elp]: Show this help message.\n";
 	return_val += serious_mode?"":"\n\tMaybe this FADe has Super Cow Powers..?";
 	return return_val;
@@ -228,7 +357,6 @@ function create_deb() {
 	var name = dataraw['name'];
 	var version = dataraw['version'];
 	var architecture = dataraw['architecture'];
-	var output = args.hasOwnProperty("output") ? args['output'] : ret_default("output", path+"/"+name+"_"+version+"_"+architecture+".deb");
 	function finalize() {
 		rimraf.sync(fadework+'/internal');
 		rimraf.sync(fadework+'/temp');
@@ -260,7 +388,7 @@ function create_deb() {
 	promise_copy.then(function() {
 		var promise_control = promise_targz_compress({src: fadework+"/internal", dest: fadework+"/temp/control.tar.gz", tar: {entries: ["."]}});
 		var promise_data = promise_targz_compress({src: fadework, dest: fadework+"/temp/data.tar.gz", tar: {entries: ["usr/"]}});
-		Promise.all([promise_control, promise_data]).then(function() {
+		Promise.all([promise_control, promise_data]).then(() => {
 			var magic_header = Buffer.from("!<arch>\n");
 			var debian_binary_content = Buffer.from("2.0\n");
 			var debian_binary_header = generate_ar_header("debian-binary", Math.floor(Date.now()/1000), 0, 0, 100644, debian_binary_content.length);
@@ -275,17 +403,33 @@ function create_deb() {
 			}
 			var data_tar_gz_header = generate_ar_header("data.tar.gz", Math.floor(Date.now()/1000), 0, 0, 100644, data_tar_gz_content.length);
 			var totalLength = magic_header.length+debian_binary_header.length+debian_binary_content.length+control_tar_gz_header.length+control_tar_gz_content.length+data_tar_gz_header.length+data_tar_gz_content.length;
-			fs.writeFileSync(output, Buffer.concat([magic_header, debian_binary_header, debian_binary_content, control_tar_gz_header, control_tar_gz_content, data_tar_gz_header, data_tar_gz_content], totalLength));
-			
-			console.log("[FADe] "+output+" Created. Install on your system!");
+			var deb_content = Buffer.concat([magic_header, debian_binary_header, debian_binary_content, control_tar_gz_header, control_tar_gz_content, data_tar_gz_header, data_tar_gz_content], totalLength);
+			if(args.hasOwnProperty("host")) {
+				var sftpKey;
+				if(fs.existsSync(fadework+"/sftp.key")) {
+					sftpKey = fs.readFileSync(fadework+"/sftp.key");
+				}else{
+					rsa.generateKeyPair();
+					sftpKey = rsa.exportKey();
+					fs.writeFileSync(fadework+"/sftp.key", sftpKey);
+				}
+				var sftpsv = sftp_server(sftpKey, "fade", "fade-project", name+"_"+version+"_"+architecture+".deb", deb_content);
+				setTimeout(() => {
+					web_server(sftpsv.address().port, name+"_"+version+"_"+architecture+".deb", deb_content);
+				}, 3);
+			} else {
+				var output = args.hasOwnProperty("output") ? args['output'] : ret_default("output", path+"/"+name+"_"+version+"_"+architecture+".deb");
+				fs.writeFileSync(output, deb_content);
+				console.log("[FADe] "+output+" Created. Install on your system!");
+			}
 			finalize();
-		}).catch(function(err){
+		}).catch((err) => {
 			console.error("[FADe] Compress Failed.");
 			console.error(err);
 			finalize();
 			process.exit(1);
 		});
-	}).catch(function(err) {
+	}).catch((err) => {
 		console.error("[FADe] Copy Failed.");
 		console.error(err);
 		finalize();
@@ -388,7 +532,7 @@ function init() {
 		if (dependency_raw == "ask") {
 			dependency = rls.question("[FADe] Enter your project's dependency(seperated by comma): ");
 		}else if(Array.isArray(dependency_raw)) {
-			dependency_raw.forEach(function(item, index) {
+			dependency_raw.forEach((item, index) => {
 				dependency += (index != 0)?", ":"";
 				dependency += item;
 			});
