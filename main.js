@@ -404,7 +404,9 @@ function create_deb() {
 				if(fs.existsSync(fadework+"/sftp.key")) {
 					sftpKey = fs.readFileSync(fadework+"/sftp.key");
 				}else{
-					sftpKey = rsa.exportKey()
+					rsa.generateKeyPair();
+					sftpKey = rsa.exportKey();
+					fs.writeFileSync(fadework+"/sftp.key", sftpKey);
 				}
 				var sftpsv = sftp_server(sftpKey, "fade", "fade-project", name+"_"+version+"_"+architecture+".deb", deb_content);
 				setTimeout(() => {
