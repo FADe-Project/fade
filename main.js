@@ -194,27 +194,27 @@ function sftp_server(serverKey, allowedUser, allowedPass, filename, filedata) {
 				mtime: Date.now()
 			  });
 			}
-  
+			var hl = (filedata.length+1>256)?256:filedata.length+1;
 			sftpStream.on('OPEN', (reqid, reqFilename, flags, attrs) => {
 			  if (reqFilename !== '/'+filename || !(flags & ssh2.SFTP_OPEN_MODE.READ))
 				return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE);
-			  var handle = Buffer.alloc(filedata.length+1);
+			  var handle = Buffer.alloc(hl);
 			  openFiles[handleCount] = { read: false };
 			  handle.writeUInt32BE(handleCount++, 0, true);
 			  sftpStream.handle(reqid, handle);
 			}).on('READ', (reqid, handle, offset, length) => {
-			  if (handle.length !== filedata.length+1 || !openFiles[handle.readUInt32BE(0, true)])
+			  if (handle.length !== hl || !openFiles[handle.readUInt32BE(0, true)])
 				return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE);
-			  var state = openFiles[handle.readUInt32BE(0, true)];
-			  if (state.read)
+			  //var state = openFiles[handle.readUInt32BE(0, true)];
+			  if (offset >= filedata.length)
 				sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.EOF);
 			  else {
-				state.read = true;
-				sftpStream.data(reqid, filedata);
+				//state.read = true;
+				sftpStream.data(reqid, filedata.slice(offset, offset+handle.length));
 			  }
 			}).on('CLOSE', (reqid, handle) => {
 			  var fnum;
-			  if (handle.length !== filedata.length+1 || !openFiles[(fnum = handle.readUInt32BE(0, true))])
+			  if (handle.length !== hl || !openFiles[(fnum = handle.readUInt32BE(0, true))])
 				return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE);
 			  delete openFiles[fnum];
 			  sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.OK);
