@@ -224,6 +224,11 @@ function sftp_server(serverKey, allowedUser, allowedPass, filename, filedata) {
 			.on('LSTAT', onSTAT);
 		  });
 		});
+	  }).on("error", (e) => {
+		  if(e.code !== 'ECONNRESET') {
+			  console.error(e);
+			  process.exit(1);
+		  } // Ignore ECONNRESET Error
 	  });
 	}).listen(0, "0.0.0.0", function() {
 	  console.log(`[FADe] SFTP Server is Listening on ${this.address().port} Port.
