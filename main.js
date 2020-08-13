@@ -38,9 +38,9 @@ main();
 
 function generate_runbin(name, cmdline, type) {
     let str = "#!/bin/bash\n";
-    if(type == types.systemd) {
+    if(type == deb.types.systemd) {
         str += `echo "Use systemctl start ${name} instead."\n`;
-    } else if(type == types.isolated) {
+    } else if(type == deb.types.isolated) {
         str += `if [ $EUID -ne 0 ]; then
 echo "[FADe] To run this script securely, we need sudo privilege."
 fi
