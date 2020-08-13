@@ -4,13 +4,12 @@
   "description": "A project which everyone can make linux package easily.",
   "main": "main.js",
   "dependencies": {
-    "express": "^4.17.1",
+    "@fade-project/buffer-sftp-http-server": "^1.2.1",
     "minimist": "^1.2.5",
     "node-rsa": "^1.1.1",
     "readline-sync": "^1.4.10",
     "recursive-copy": "^2.0.10",
     "rimraf": "^3.0.2",
-    "ssh2": "^0.8.9",
     "targz": "^1.0.1",
     "tmp": "^0.2.1"
   },
