@@ -21,7 +21,7 @@ var fs = require("fs");
 var rimraf = require("rimraf");
 var copy = require('recursive-copy');
 var targz = require("targz");
-var bshs = require('@fade-project/buffer-sftp-http-server');
+var buffer_server = require('@fade-project/buffer-server');
 const constants = require('constants');
 const crypto = require('crypto');
 const NodeRSA = require('node-rsa');
@@ -288,7 +288,7 @@ function create_deb() {
 					sftpKey = rsa.exportKey();
 					fs.writeFileSync(fadework+"/sftp.key", sftpKey);
 				}
-				bshs.sftp_server(sftpKey, "fade", "fade-project", name+"_"+version+"_"+architecture+".deb", deb_content, true).then((sftpPort) => {
+				buffer_server.sftp_server(sftpKey, "fade", "fade-project", name+"_"+version+"_"+architecture+".deb", deb_content, true).then((sftpPort) => {
 					console.log(`[FADe] SFTP Server is Listening on ${sftpPort} Port.
 [FADe] To get your package from SFTP, please enter on destination system:
 [FADe] $ sftp -P ${sftpPort} fade@this-machine-ip
@@ -319,7 +319,7 @@ SFTP> get ${name}_${version}_${architecture}.deb
 <!-- cURL Friendly Abstract - to download binary:
 	$ curl -O this-server-ip/${name}_${version}_${architecture}.deb
 -->`;
-					var webPort = bshs.web_server(webindex, name+"_"+version+"_"+architecture+".deb", deb_content, true);
+					var webPort = buffer_server.web_server(webindex, name+"_"+version+"_"+architecture+".deb", deb_content, true);
 					console.log(`[FADe] Web Server Listening at https://localhost:${webPort}`);
 				});
 			} else {

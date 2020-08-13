@@ -15,6 +15,6 @@
  * [tmp](https://github.com/raszi/node-tmp) - [MIT License](https://github.com/raszi/node-tmp/blob/master/LICENSE)
  * [node-rsa](https://github.com/rzcoder/node-rsa) - [MIT License](https://github.com/rzcoder/node-rsa#license)
 
-### buffer-sftp-http-server
+### [buffer-server](https://github.com/fade-project/buffer-server)
  * [express](https://github.com/expressjs/express) - [MIT License](https://github.com/expressjs/express/blob/master/LICENSE)
  * [ssh2](https://github.com/mscdex/ssh2) - [MIT License](https://github.com/mscdex/ssh2/blob/master/LICENSE)

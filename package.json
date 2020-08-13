@@ -4,7 +4,7 @@
   "description": "A project which everyone can make linux package easily.",
   "main": "main.js",
   "dependencies": {
-    "@fade-project/buffer-sftp-http-server": "^1.2.1",
+    "@fade-project/buffer-server": "^1.0.0",
     "minimist": "^1.2.5",
     "node-rsa": "^1.1.1",
     "readline-sync": "^1.4.10",
