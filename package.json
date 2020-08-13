@@ -5,12 +5,11 @@
   "main": "main.js",
   "dependencies": {
     "@fade-project/buffer-server": "^1.0.0",
+    "@fade-project/deb-build": "^1.0.1",
     "minimist": "^1.2.5",
     "node-rsa": "^1.1.1",
     "readline-sync": "^1.4.10",
     "recursive-copy": "^2.0.10",
-    "rimraf": "^3.0.2",
-    "targz": "^1.0.1",
     "tmp": "^0.2.1"
   },
   "devDependencies": {},
