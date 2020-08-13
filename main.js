@@ -47,7 +47,7 @@ fi
 cd /usr/lib/${name}
 exec sudo -H -u ${name} ${cmdline} $*`;
     } else {
-        str += `bash -c "cd /usr/lib/${name}\n`;
+        str += `bash -c "cd /usr/lib/${name}"\n`;
         str += `${cmdline} $*\n`;
     }
     return str;
