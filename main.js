@@ -6,26 +6,20 @@
 // /_/ /_/ |_/____/\__/ /_/  /_/  \___/_/ /\__/\__/\__/ 
 //                                   |___/              
 //
-//  FADe Project (CLI Edition) Source code
+//  FADe Project (Frontend) Source code
 //  This program is distributed under MIT License.
 //  Copyright (C) ldmsys, All rights reserved.
-//  WARNING: This Source code IS COMPLETELY spaghetti code.
 
+// Load our precious subprojects
 const fade_version = "Git Version";
-var rls = require('readline-sync');
-var ln = '\n';
-var tmpjs = require('tmp');
-var child_process = require('child_process');
-var os = require("os");
-var fs = require("fs");
-var rimraf = require("rimraf");
-var copy = require('recursive-copy');
-var targz = require("targz");
-const constants = require('constants');
-const crypto = require('crypto');
-const ssh2 = require('ssh2');
-const express = require('express');
-const app = express();
+const buffer_server = require('@fade-project/buffer-server');
+const deb = require("@fade-project/deb-build");
+const child_process = require('child_process');
+const os = require("os");
+const tmpjs = require('tmp');
+const copy = require('recursive-copy');
+const rls = require('readline-sync');
+const fs = require("fs");
 const NodeRSA = require('node-rsa');
 const rsa = new NodeRSA({b: 256});
 var args = require('minimist')(process.argv.slice(2), {
@@ -39,248 +33,30 @@ var args = require('minimist')(process.argv.slice(2), {
 		deb: 'create-deb'
     }
 });
+
 main();
 
-function generate_ar_header(filename, timestamp, owner_id, group_id, filemode, filesize) {
-	// REF: https://en.wikipedia.org/wiki/Ar_%28Unix%29
-    var buf = Buffer.alloc(60, 0x20); // fill with space
-
-    buf.write(filename.toString(), 0); // 0 - 16 byte: File Name
-    buf.write(timestamp.toString(), 16); // 16 - 28 byte: Timestamp (1972-11-21 = 91152000)
-    buf.write(owner_id.toString(), 28); // 28 - 34 byte: Owner ID
-    buf.write(group_id.toString(), 34); // 34 - 40 byte: Group ID
-    buf.write(filemode.toString(), 40); // 40 - 48 byte: File Mode (WARNING: OCTAL!!)
-    buf.write(filesize.toString(), 48); // 48 - 58 byte: File Size
-    buf.write('`\n', 58); // 58 - 60 Byte: End of Header
-    return buf;
-}
-
-function promise_targz_compress(opt) {
-    return new Promise((res, rej) => {
-        targz.compress(opt, (err) => {
-            if(err) return rej(err);
-            res();
-        });
-    });
-}
-
-function generate_deb_control(name, version, maintainer_name, maintainer_email, depends, architecture, priority, url, desc) {
-    str = "";
-    str += "Package: " + name + ln;
-    str += "Version: " + version + ln;
-    str += "Priority: " + priority + ln;
-    str += "Architecture: " + architecture + ln;
-    str += "Maintainer: " + maintainer_name + " <" + maintainer_email + ">\n";
-    str += "Depends: systemd, " + depends + ln;
-    str += "Homepage: " + url + ln;
-    str += "Description: " + desc
-    str += ln;
-    //console.log("Control File: \n"+str);
-    return str;
-}
 function generate_runbin(name, cmdline, type) {
-    str = "";
-    str += "#!/bin/bash\n";
-    if(type == "systemd") {
-        str += "echo \"Use systemctl start "+name+" instead.\"\n";
+    let str = "#!/bin/bash\n";
+    if(type == deb.types.systemd) {
+        str += `echo "Use systemctl start ${name} instead."\n`;
+    } else if(type == deb.types.isolated) {
+        str += `if [ $EUID -ne 0 ]; then
+echo "[FADe] To run this script securely, we need sudo privilege."
+fi
+cd /usr/lib/${name}
+exec sudo -H -u ${name} ${cmdline} $*`;
+    } else {
+        str += `bash -c "cd /usr/lib/${name}"\n`;
+        str += `${cmdline} $*\n`;
     }
-    if(type == "isolated") {
-        str += "if [ $EUID -ne 0 ]; then\n";
-        str += "echo \"(FADe) To run this script securely, we need sudo privilege.\"\n";
-        str += "fi\n"
-        str += "cd /usr/lib/" + name + ln;
-        str += "exec sudo -H -u " + name + " " + cmdline + " $*\n";
-    }
-    if(type == "normal") {
-        str += "bash -c \"cd /usr/lib/"+name+";"+cmdline+" $*\"\n";
-    }
-    //console.log("RunBin File: \n"+str);
-    return str;
-}
-function generate_deb_postinst(name, version, desc, cmdline, type, maintainer_name, maintainer_email, postinst) {
-    str = "";
-    str += "#!/bin/bash\n";
-    if(type == "systemd" || type == "isolated") {
-        str += "useradd -r -s /dev/null -g nogroup -d /usr/lib/" + name + " -c \"" + desc + "\" " + name + ln;
-        str += "chown -R " + name + ":root /usr/lib/" + name + ln;
-    }
-    str += "echo \"" + name + " v" + version + " by " + maintainer_name + " <" + maintainer_email + ">\"\n";
-    str += postinst;
-    str += ln;
-    if(type == "systemd") {
-        str += "cat >> /etc/systemd/system/" + name + ".service << EOF\n";
-        /* Start /etc/systemd/system/{NAME}.service Content */
-        str += "[Unit]\n";
-        str += "Description="+desc+ln;
-
-        str += "[Service]\n";
-        str += "Type=simple\n";
-        str += "User=" + name + ln;
-        str += "WorkingDirectory=/usr/lib/"+name+ln;
-        str += "ExecStart=/bin/bash -c \"cd /usr/lib/" + name + ";" + cmdline + "\"\n";
-        str += "ExecStop=/usr/bin/killall -u " + name + ln;
-
-        str += "[Install]\n";
-        str += "WantedBy=multi-user.target\n";
-        /* End /etc/systemd/system/{NAME}.service Content */
-        str += "EOF\n";
-        str += "chmod 644 /etc/systemd/system/"+name+".service\n";
-        str += "systemctl daemon-reload\n";
-        str += "systemctl start "+name+ln;
-        str += "systemctl enable "+name+ln;
-    }
-    //console.log("PostInst File: \n"+str);
-    return str;
-}
-function generate_deb_prerm(name, type, prerm) {
-    str = "";
-    str += "#!/bin/bash\n";
-    str += prerm;
-    str += ln;
-    if(type == "systemd" || type == "isolated") {
-        if(type == "systemd") {
-            str += "systemctl stop " + name + ln;
-            str += "systemctl disable "+ name + ln;
-            str += "rm /etc/systemd/system/" + name + ".service\n";
-            str += "systemctl daemon-reload\n";
-        }
-        str += "userdel " + name + ln;
-    }
-    str += "rm /usr/bin/" + name + ln;
-    str += "rm -rf /usr/lib/" + name + "/.*\n";
-    str += "rm -rf /usr/lib/" + name + "/*\n";
-    //console.log("PreRM File:\n "+str);
     return str;
 }
 function ret_default(key, req_default) {
 	console.warn("[FADe] " + key + " not set, defaulting to " + req_default);
 	return req_default;
 }
-function sftp_server(serverKey, allowedUser, allowedPass, filename, filedata) {
-	return new ssh2.Server({
-	  hostKeys: [serverKey]
-	}, (client) => {
-	  client.on("authentication", (ctx) => {
-		// Authentication
-		if(ctx.method == "password" && ctx.user.length == allowedUser.length && crypto.timingSafeEqual(Buffer.from(ctx.user), Buffer.from(allowedUser))
-		&& ctx.password.length == allowedPass.length && crypto.timingSafeEqual(Buffer.from(ctx.password), Buffer.from(allowedPass))) {
-		  ctx.accept();
-		}else{
-		  ctx.reject(['password']);
-		}
-	  }).on('ready', () => {
-		// Ready
-		client.on('session', (accept, reject) => {
-		  var session = accept();
-		  
-		  session.on('sftp', (accept, reject) => {
-			// SFTP Connection
-			var sftpStream = accept();
-			var openFiles = {};
-			var handleCount = 0;
-			function onSTAT(reqid, path) {
-			  if (path !== '/'+filename)
-				return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE);
-				var mode = constants.S_IFREG; // Regular file
-				mode |= constants.S_IRWXU; // read, write, execute for user
-				mode |= constants.S_IRWXG; // read, write, execute for group
-				mode |= constants.S_IRWXO; // read, write, execute for other
-			  sftpStream.attrs(reqid, {
-				mode: mode,
-				uid: 0,
-				gid: 0,
-				size: filedata.length,
-				atime: Date.now(),
-				mtime: Date.now()
-			  });
-			}
-			var hl = (filedata.length+1>256)?256:filedata.length+1;
-			sftpStream.on('OPEN', (reqid, reqFilename, flags, attrs) => {
-			  if (reqFilename !== '/'+filename || !(flags & ssh2.SFTP_OPEN_MODE.READ))
-				return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE);
-			  var handle = Buffer.alloc(hl);
-			  openFiles[handleCount] = { read: false };
-			  handle.writeUInt32BE(handleCount++, 0, true);
-			  sftpStream.handle(reqid, handle);
-			}).on('READ', (reqid, handle, offset, length) => {
-			  if (handle.length !== hl || !openFiles[handle.readUInt32BE(0, true)])
-				return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE);
-			  //var state = openFiles[handle.readUInt32BE(0, true)];
-			  if (offset >= filedata.length)
-				sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.EOF);
-			  else {
-				//state.read = true;
-				sftpStream.data(reqid, filedata.slice(offset, offset+handle.length));
-			  }
-			}).on('CLOSE', (reqid, handle) => {
-			  var fnum;
-			  if (handle.length !== hl || !openFiles[(fnum = handle.readUInt32BE(0, true))])
-				return sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.FAILURE);
-			  delete openFiles[fnum];
-			  sftpStream.status(reqid, ssh2.SFTP_STATUS_CODE.OK);
-			}).on('REALPATH', (reqid, path) => {
-			  sftpStream.name(reqid, {filename: "/"});
-			}).on('STAT', onSTAT)
-			.on('LSTAT', onSTAT);
-		  });
-		});
-	  }).on("error", (e) => {
-		  if(e.code !== 'ECONNRESET') {
-			  console.error(e);
-			  process.exit(1);
-		  } // Ignore ECONNRESET Error
-	  });
-	}).listen(0, "0.0.0.0", function() {
-	  console.log(`[FADe] SFTP Server is Listening on ${this.address().port} Port.
-  [FADe] To get your package from SFTP, please enter on destination system:
-  [FADe] $ sftp -P ${this.address().port} ${allowedUser}@this-machine-ip
-  [FADe] Password: ${allowedPass}
-  [FADe] SFTP> get ${filename}`);
-	});
-  }
-  
-  function web_server(sftpport, filename, filedata) {
-	app.get('/', (req, res) => {
-	  res.send(`<!DOCTYPE html>
-  <head>
-	<title>FADe Binary download</title>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-  </head>
-  <body>
-	<h1>FADe Binary Download</h1>
-	<p>Welcome to FADe binary Download page.</p>
-	<a href="/${filename}">Click here to Download binary via HTTP.</a>
-	<p>OR Download via SFTP: </p>
-	<pre>
-	$ sftp -P ${sftpport} fade@${req.hostname}
-	Password: fade-project
-	SFTP> get ${filename}
-	</pre>
-	<div style="font-size: 0.4rem; color: grey">
-	Due to ssh2 module restrictions, please note that GUI client won't work.<br>
-	Generated by <a href="//github.com/fade-project/fade">FADe Project</a> under MIT License with <3 
-	</div>
-  </body>
-  
-  <!-- cURL Friendly Abstract - to download binary:
-	$ curl -O ${req.hostname}/${filename}
-  -->`);
-	}).get('/'+filename, (req, res) => {
-	  res.writeHead(200, {
-		'Content-Disposition': `attachment; filename="${filename}"`,
-		'Content-Type': "application/octet-stream"
-	  });
-	  res.end(filedata);
-	})
-	var server = app.listen(0, () => {
-	  console.log(`[FADe] Web Server Listening at http://localhost:${server.address().port}`)
-	})
-  }
-  
-
 function main() {
-	//console.debug(args);
 	if(args.hasOwnProperty("help")) {
 		console.log(help(false));
 	}else if(args.hasOwnProperty("init")) {
@@ -349,90 +125,75 @@ function create_deb() {
 		process.exit(1);
 	} var fadework = path + '/.fadework';
 	var dataraw = require(fadework+'/fade.json');
-	var control = generate_deb_control(dataraw['name'], dataraw['version'], dataraw['maintainer_name'], dataraw['maintainer_email'], dataraw['depends'],
-										dataraw['architecture'], dataraw['priority'], dataraw['url'], dataraw['desc']);
-	var postinst = generate_deb_postinst(dataraw['name'], dataraw['version'], dataraw['desc'], dataraw['run'], dataraw['type'], dataraw['maintainer_name'],
-										dataraw['maintainer_email'], dataraw['postinst_payload']);
-	var prerm = generate_deb_prerm(dataraw['name'], dataraw['type'], dataraw['prerm_payload']);
-	var name = dataraw['name'];
-	var version = dataraw['version'];
-	var architecture = dataraw['architecture'];
-	function finalize() {
-		rimraf.sync(fadework+'/internal');
-		rimraf.sync(fadework+'/temp');
-		rimraf.sync(fadework+'/usr/lib/'+name);
-		fs.mkdirSync(fadework+'/internal', 0755);
-		fs.mkdirSync(fadework+'/usr/lib/'+name, 0755);
-		fs.writeFileSync(fadework+'/usr/lib/'+name+"/DO_NOT_PUT_FILE_ON_THIS_DIRECTORY", "ANYTHING IN THIS DIRECTORY IS WILL BE DISCARDED");
-	}
-	if (fs.existsSync(fadework+'/internal')) {
-        rimraf.sync(fadework+'/internal');
-	} fs.mkdirSync(fadework+'/internal', 0755);
+	let { name, version, architecture } = dataraw;
+	var data_tar_gz_datadir = deb.set_data_tar_gz_datadir();
+	fs.mkdirSync(data_tar_gz_datadir.name+"/usr");
+	var promise_copy1 = copy(fadework+"/usr",data_tar_gz_datadir.name+"/usr", {overwrite: true, expand: true, dot: true, junk: false, filter: ['**/*']});
+	promise_copy1.then(() => {
+		fs.rmdirSync(data_tar_gz_datadir.name+"/usr/lib/"+name, { recursive: true });
+		fs.mkdirSync(data_tar_gz_datadir.name+"/usr/lib/"+name, 0755);
+		var promise_copy2 = copy(path, data_tar_gz_datadir.name+"/usr/lib/"+name, {overwrite: true, expand: true, dot: true, junk: false, filter: ['**/*']});
+		promise_copy2.then(() => {
+			deb.build(name, version, dataraw['desc'], dataraw['url'], architecture, dataraw['depends'], dataraw['priority'],
+			dataraw['run'], dataraw['maintainer_name'], dataraw['maintainer_email'], dataraw['type'], dataraw['postinst_payload'],
+			dataraw['prerm_payload']).then((deb_content) => {
+				if(args.hasOwnProperty("host")) {
+					var sftpKey;
+					if(fs.existsSync(fadework+"/sftp.key")) {
+						sftpKey = fs.readFileSync(fadework+"/sftp.key");
+					}else{
+						rsa.generateKeyPair();
+						sftpKey = rsa.exportKey();
+						fs.writeFileSync(fadework+"/sftp.key", sftpKey);
+					}
+					buffer_server.sftp_server(sftpKey, "fade", "fade-project", name+"_"+version+"_"+architecture+".deb", deb_content, true).then((sftpPort) => {
+						console.log(`[FADe] SFTP Server is Listening on ${sftpPort} Port.
+[FADe] To get your package from SFTP, please enter on destination system:
+[FADe] $ sftp -P ${sftpPort} fade@this-machine-ip
+[FADe] Password: fade-project
+[FADe] SFTP> get ${name}_${version}_${architecture}.deb`);
+						var webindex = `<!DOCTYPE html>
+<head>
+	<title>FADe Binary download</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+	<h1>FADe Binary Download</h1>
+	<p>Welcome to FADe binary Download page.</p>
+	<a href="/${name}_${version}_${architecture}.deb">Click here to Download binary via HTTP.</a>
+	<p>OR Download via SFTP: </p>
+	<pre>
+$ sftp -P ${sftpPort} fade@this-server-ip
+Password: fade-project
+SFTP> get ${name}_${version}_${architecture}.deb
+	</pre>
+	<div style="font-size: 0.4rem; color: grey">
+		Due to ssh2 module restrictions, please note that GUI client won't work.<br>
+		Generated by <a href="//github.com/fade-project/fade">FADe Project</a> under MIT License with <3 
+	</div>
+</body>
 
-	if (fs.existsSync(fadework+'/usr/lib/'+name)) {
-        rimraf.sync(fadework+'/usr/lib/'+name);
-	} fs.mkdirSync(fadework+'/usr/lib/'+name, 0755);
-
-	if (fs.existsSync(fadework+'/temp')) {
-        rimraf.sync(fadework+'/temp');
-	} fs.mkdirSync(fadework+'/temp', 0755);
-
-	fs.writeFileSync(fadework+"/internal/control", control);
-    fs.writeFileSync(fadework+"/internal/postinst", postinst);
-    fs.chmodSync(fadework+"/internal/postinst", 0755);
-    fs.writeFileSync(fadework+"/internal/prerm", prerm);
-	fs.chmodSync(fadework+"/internal/prerm", 0755);
-	fs.writeFileSync(fadework+"/temp/debian-binary", "2.0\n");
-	fs.chmodSync(fadework+"/temp/debian-binary", 0644);	
-	var promise_copy = copy(path, fadework+'/usr/lib/'+name, {overwrite: true,	expand: true, dot: true, junk: true, filter: ['**/*', '!.fadework', '!.fadework/*']});
-	promise_copy.then(function() {
-		var promise_control = promise_targz_compress({src: fadework+"/internal", dest: fadework+"/temp/control.tar.gz", tar: {entries: ["."]}});
-		var promise_data = promise_targz_compress({src: fadework, dest: fadework+"/temp/data.tar.gz", tar: {entries: ["usr/"]}});
-		Promise.all([promise_control, promise_data]).then(() => {
-			var magic_header = Buffer.from("!<arch>\n");
-			var debian_binary_content = Buffer.from("2.0\n");
-			var debian_binary_header = generate_ar_header("debian-binary", Math.floor(Date.now()/1000), 0, 0, 100644, debian_binary_content.length);
-			var control_tar_gz_content = fs.readFileSync(fadework+"/temp/control.tar.gz");
-			if (control_tar_gz_content.length % 2 !== 0) {
-				control_tar_gz_content = Buffer.concat([control_tar_gz_content, Buffer.alloc(1,0)],control_tar_gz_content.length+1);
-			}
-			var control_tar_gz_header = generate_ar_header("control.tar.gz", Math.floor(Date.now()/1000), 0, 0, 100644, control_tar_gz_content.length);
-			var data_tar_gz_content = fs.readFileSync(fadework+"/temp/data.tar.gz");
-			if (data_tar_gz_content.length % 2 !== 0) {
-				data_tar_gz_content = Buffer.concat([data_tar_gz_content, Buffer.alloc(1,0)],data_tar_gz_content.length+1);
-			}
-			var data_tar_gz_header = generate_ar_header("data.tar.gz", Math.floor(Date.now()/1000), 0, 0, 100644, data_tar_gz_content.length);
-			var totalLength = magic_header.length+debian_binary_header.length+debian_binary_content.length+control_tar_gz_header.length+control_tar_gz_content.length+data_tar_gz_header.length+data_tar_gz_content.length;
-			var deb_content = Buffer.concat([magic_header, debian_binary_header, debian_binary_content, control_tar_gz_header, control_tar_gz_content, data_tar_gz_header, data_tar_gz_content], totalLength);
-			if(args.hasOwnProperty("host")) {
-				var sftpKey;
-				if(fs.existsSync(fadework+"/sftp.key")) {
-					sftpKey = fs.readFileSync(fadework+"/sftp.key");
-				}else{
-					rsa.generateKeyPair();
-					sftpKey = rsa.exportKey();
-					fs.writeFileSync(fadework+"/sftp.key", sftpKey);
-				}
-				var sftpsv = sftp_server(sftpKey, "fade", "fade-project", name+"_"+version+"_"+architecture+".deb", deb_content);
-				setTimeout(() => {
-					web_server(sftpsv.address().port, name+"_"+version+"_"+architecture+".deb", deb_content);
-				}, 3);
-			} else {
-				var output = args.hasOwnProperty("output") ? args['output'] : ret_default("output", path+"/"+name+"_"+version+"_"+architecture+".deb");
-				fs.writeFileSync(output, deb_content);
-				console.log("[FADe] "+output+" Created. Install on your system!");
-			}
-			finalize();
+<!-- cURL Friendly Abstract - to download binary:
+	$ curl -O this-server-ip/${name}_${version}_${architecture}.deb
+-->`;
+						var webPort = buffer_server.web_server(webindex, name+"_"+version+"_"+architecture+".deb", deb_content, true);
+						console.log(`[FADe] Web Server Listening at https://localhost:${webPort}`);
+					});
+					} else {
+						var output = args.hasOwnProperty("output") ? args['output'] : ret_default("output", path+"/"+name+"_"+version+"_"+architecture+".deb");
+						fs.writeFileSync(output, deb_content);
+						console.log("[FADe] "+output+" Created. Install on your system!");
+					}
+			});
 		}).catch((err) => {
-			console.error("[FADe] Compress Failed.");
+			console.error("[FADe] Create .deb Failed.");
 			console.error(err);
-			finalize();
 			process.exit(1);
 		});
 	}).catch((err) => {
-		console.error("[FADe] Copy Failed.");
+		console.error("[FADe] Create .deb Failed.");
 		console.error(err);
-		finalize();
 		process.exit(1);
 	});
 }
@@ -577,10 +338,10 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 		prerm_payload: prerm_payload
 	});
 	if (fs.existsSync(path+"/fadework")) {
-		rimraf.sync(path+"/fadework");
+		fs.rmdirSync(path+"/fadework", { recursive: true });
 	}
 	if (fs.existsSync(fadework)) {
-		rimraf.sync(fadework);
+		fs.rmdirSync(fadework, { recursive: true });
 	}
 	if (!fs.existsSync(fadework)) {
 		fs.mkdirSync(fadework, 0755);
@@ -590,7 +351,6 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 	fs.mkdirSync(fadework+'/usr/lib', 0755);
 	fs.mkdirSync(fadework+'/usr/lib/'+name, 0755);
 	fs.writeFileSync(fadework+'/usr/lib/'+name+"/DO_NOT_PUT_FILE_ON_THIS_DIRECTORY", "ANYTHING IN THIS DIRECTORY IS WILL BE DISCARDED");
-	fs.mkdirSync(fadework+'/internal', 0755);
 	fs.writeFileSync(fadework+'/fade.json', data);
 	fs.writeFileSync(fadework+"/usr/bin/"+name, generate_runbin(name, cmdline, type));
 	fs.chmodSync(fadework+"/usr/bin/"+name,0755);
