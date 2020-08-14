@@ -178,7 +178,7 @@ SFTP> get ${name}_${version}_${architecture}.deb
 	$ curl -O this-server-ip/${name}_${version}_${architecture}.deb
 -->`;
 						var webPort = buffer_server.web_server(webindex, name+"_"+version+"_"+architecture+".deb", deb_content, true);
-						console.log(`[FADe] Web Server Listening at https://localhost:${webPort}`);
+						console.log(`[FADe] Web Server Listening at http://localhost:${webPort}`);
 					});
 					} else {
 						var output = args.hasOwnProperty("output") ? args['output'] : ret_default("output", path+"/"+name+"_"+version+"_"+architecture+".deb");
