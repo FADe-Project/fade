@@ -29,6 +29,8 @@ var args = require('minimist')(process.argv.slice(2), {
 		o: 'output',
 		i: 'input',
 		depend: 'dependency',
+		'depend-add': 'dependency-add',
+		'depend-rm': 'dependancy-rm',
 		dependancy: 'dependency',
 		deb: 'create-deb'
     }
@@ -96,7 +98,8 @@ function help(serious_mode) {
 	return_val += "\t--postinst-payload: Edit Post-Install Script's payload with your preferred editor.\n"
 	return_val += "\t--prerm-payload: Edit Pre-Remove Script's payload with your preferred editor.\n"
 	return_val += "\t--input filename: Use file as postinst/prerm payload\n";
-	return_val += "\t--depend[ency]: No effect, Another parameter to edit dependency will be provided in future releases.\n";
+	return_val += "\t--depend[ency]: No effect.\n";
+	return_val += "\t--depend[ency]-add: Add Dependency to your project; this parameter can be used multiple times.\n";
 	return_val += "--[create-]deb [parameters]: Create .deb to Install your project to Debian-based systems\n";
 	return_val += "\t--path \"/path/to/dir\": Locate your project.\n";
 	return_val += "\t--o[utput] [/path/to/dir/]output.deb: Change output deb, Default is name_version_arch.deb on project directory.\n";
@@ -236,7 +239,7 @@ Put downloaded binary into C:\\Windows\\system32 or your working directory, and 
 
 function edit() {
 	var path = args['path'];
-	var fadework = getFadework();
+	var fadework = getFadework(path);
 	var dataraw = require(fadework+'/fade.json');
 	if(typeof args["name"] !== "undefined") dataraw['name'] = args['name'];
 	if(typeof args["description"] !== "undefined") dataraw['desc'] = args['description'];
@@ -249,6 +252,22 @@ function edit() {
 	if(typeof args["maintainer-email"] !== "undefined") dataraw['maintainer_email'] = args['maintainer-email'];
 	if(typeof args["type"] !== "undefined") dataraw['type'] = args['type'];
 	/* Dependency Configuration here */
+	if(typeof args['dependency-add'] !== "undefined") {
+		depArray = dataraw['depends'].split(",");
+		depAdd = args['dependency-add'];
+		if(Array.isArray(depAdd)) {
+			depAdd.forEach((item, index) => {
+				depArray.push(item);
+			});
+		}else{
+			depArray.push(depAdd);
+		}
+		dataraw['depends'] = "";
+		depArray.forEach((item, index) => {
+			dataraw['depends'] += (index != 0)?", ":"";
+			dataraw['depends'] += item;
+		});
+	}
 	if(typeof args["postinst-payload"] !== "undefined") {
 		if(typeof args["input"] !== "undefined") {
 			dataraw['postinst_payload'] = fs.readFileSync(args['input']).toString();
