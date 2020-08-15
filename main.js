@@ -30,7 +30,7 @@ var args = require('minimist')(process.argv.slice(2), {
 		i: 'input',
 		depend: 'dependency',
 		'depend-add': 'dependency-add',
-		'depend-rm': 'dependancy-rm',
+		'depend-rm': 'dependency-rm',
 		dependancy: 'dependency',
 		deb: 'create-deb'
     }
@@ -100,6 +100,7 @@ function help(serious_mode) {
 	return_val += "\t--input filename: Use file as postinst/prerm payload\n";
 	return_val += "\t--depend[ency]: No effect.\n";
 	return_val += "\t--depend[ency]-add: Add Dependency to your project; this parameter can be used multiple times.\n";
+	return_val += "\t--depend[ency]-rm: Remove Dependency from your project; this parameter can be used multiple times.\n";
 	return_val += "--[create-]deb [parameters]: Create .deb to Install your project to Debian-based systems\n";
 	return_val += "\t--path \"/path/to/dir\": Locate your project.\n";
 	return_val += "\t--o[utput] [/path/to/dir/]output.deb: Change output deb, Default is name_version_arch.deb on project directory.\n";
@@ -253,7 +254,7 @@ function edit() {
 	if(typeof args["type"] !== "undefined") dataraw['type'] = args['type'];
 	/* Dependency Configuration here */
 	if(typeof args['dependency-add'] !== "undefined") {
-		depArray = dataraw['depends'].split(",");
+		depArray = dataraw['depends'].split(", ");
 		depAdd = args['dependency-add'];
 		if(Array.isArray(depAdd)) {
 			depAdd.forEach((item, index) => {
@@ -261,6 +262,24 @@ function edit() {
 			});
 		}else{
 			depArray.push(depAdd);
+		}
+		dataraw['depends'] = "";
+		depArray.forEach((item, index) => {
+			dataraw['depends'] += (index != 0)?", ":"";
+			dataraw['depends'] += item;
+		});
+	}
+	if(typeof args['dependency-rm'] !== "undefined") {
+		depArray = dataraw['depends'].split(", ");
+		depRm = args['dependency-rm'];
+		if(Array.isArray(depRm)) {
+			depArray = depArray.filter((val, index, arr) => {
+				return !depRm.includes(val);
+			});
+		}else{
+			depArray = depArray.filter((val, index, arr) => {
+				return val != depRm;
+			});
 		}
 		dataraw['depends'] = "";
 		depArray.forEach((item, index) => {
