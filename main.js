@@ -57,20 +57,21 @@ function ret_default(key, req_default) {
 	return req_default;
 }
 function main() {
-	if(args.hasOwnProperty("help")) {
+	if(typeof args["help"] !== "undefined") {
 		console.log(help(false));
-	}else if(args.hasOwnProperty("init")) {
+	}else if(typeof args["init"] !== "undefined") {
 		init();
-	}else if(args.hasOwnProperty("edit")) {
+	}else if(typeof args["edit"] !== "undefined") {
 		edit();
-	}else if(args.hasOwnProperty("create-deb")) {
-		create_deb();
-	}else if(args.hasOwnProperty("moo")) {
+	}else if(typeof args["create-deb"] !== "undefined") {
+		create_deb(args['path'], args['host']);
+	}else if(args['_'] == "moo" || typeof args['moo'] !== "undefined") {
 		console.error("[FADe] Actually, FADe has Half-cow Powers.");
 		console.error("\t\t(__) \n\t\t(oo) \n\t      ---\\/ \n\t\t||   \n\t      --/\\ \n\t\t~~ ");
 	}else{
 		console.error("[FADe] Invalid or no option given.");
 		console.error(help(true));
+		process.exit(1);
 	}
 }
 function help(serious_mode) {
@@ -104,12 +105,11 @@ function help(serious_mode) {
 	return_val += serious_mode?"":"\n\tMaybe this FADe has Super Cow Powers..?";
 	return return_val;
 }
-
-function create_deb() {
-	if(!args.hasOwnProperty("path")) {
-		console.error("[FADe] --create-deb can't be used without --path parameter.");
+function getFadework(path) {
+	if(typeof path == "undefined") {
+		console.error("[FADe] This function can't be used without --path parameter.");
 		process.exit(1);
-	} var path = args['path'];
+	}
 	if(fs.existsSync(path+"/fadework")) {
 		if(fs.existsSync(path+"/fadework/fade-electron.json") || fs.existsSync(path+"/fadework/internal-sh")) {
 			console.error("[FADe] Sorry, but FADe Project is reborn from scratch, so it's not compatible with old configuration files.");
@@ -123,7 +123,12 @@ function create_deb() {
 	if(!fs.existsSync(path+'/.fadework')) {
 		console.error("[FADe] Do --init first, please.");
 		process.exit(1);
-	} var fadework = path + '/.fadework';
+	}
+	return path + '/.fadework';
+}
+
+function create_deb(path, host) {
+	var fadework = getFadework(path);
 	var dataraw = require(fadework+'/fade.json');
 	let { name, version, architecture } = dataraw;
 	var data_tar_gz_datadir = deb.set_data_tar_gz_datadir();
@@ -137,7 +142,7 @@ function create_deb() {
 			deb.build(name, version, dataraw['desc'], dataraw['url'], architecture, dataraw['depends'], dataraw['priority'],
 			dataraw['run'], dataraw['maintainer_name'], dataraw['maintainer_email'], dataraw['type'], dataraw['postinst_payload'],
 			dataraw['prerm_payload']).then((deb_content) => {
-				if(args.hasOwnProperty("host")) {
+				if(typeof host !== "undefined") {
 					var sftpKey;
 					if(fs.existsSync(fadework+"/sftp.key")) {
 						sftpKey = fs.readFileSync(fadework+"/sftp.key");
@@ -181,7 +186,7 @@ SFTP> get ${name}_${version}_${architecture}.deb
 						console.log(`[FADe] Web Server Listening at http://localhost:${webPort}`);
 					});
 					} else {
-						var output = args.hasOwnProperty("output") ? args['output'] : ret_default("output", path+"/"+name+"_"+version+"_"+architecture+".deb");
+						var output = typeof args['output'] !== "undefined" ? args['output'] : ret_default("output", path+"/"+name+"_"+version+"_"+architecture+".deb");
 						fs.writeFileSync(output, deb_content);
 						console.log("[FADe] "+output+" Created. Install on your system!");
 					}
@@ -230,45 +235,29 @@ Put downloaded binary into C:\\Windows\\system32 or your working directory, and 
 }
 
 function edit() {
-	if(!args.hasOwnProperty("path")) {
-		console.error("[FADe] --edit can't be used without --path parameter.");
-		process.exit(1);
-	} var path = args['path'];
-	if(fs.existsSync(path+"/fadework")) {
-		if(fs.existsSync(path+"/fadework/fade-electron.json") || fs.existsSync(path+"/fadework/internal-sh")) {
-			console.error("[FADe] Sorry, but FADe Project is reborn from scratch, so it's not compatible with old configuration files.");
-			console.error("[FADe] Please do --init.");
-			process.exit(1);
-		}else{
-			console.log("[FADe] Found Legacy FADe Directory, migrating...");
-			fs.renameSync(path+"/fadework", path+"/.fadework");
-		}
-	}
-	if(!fs.existsSync(path+'/.fadework')) {
-		console.error("[FADe] Do --init first, please.");
-		process.exit(1);
-	} var fadework = path + '/.fadework';
+	var path = args['path'];
+	var fadework = getFadework();
 	var dataraw = require(fadework+'/fade.json');
-	if(args.hasOwnProperty("name")) dataraw['name'] = args['name'];
-	if(args.hasOwnProperty("description")) dataraw['desc'] = args['description'];
-	if(args.hasOwnProperty("version")) dataraw['version'] = args['version'];
-	if(args.hasOwnProperty("url")) dataraw['url'] = args['url'];
-	if(args.hasOwnProperty("architecture")) dataraw['architecture'] = args['architecture'];
-	if(args.hasOwnProperty("priority")) dataraw['priority'] = args['priority'];
-	if(args.hasOwnProperty("cmdline")) dataraw['run'] = args['cmdline'];
-	if(args.hasOwnProperty("maintainer-name")) dataraw['maintainer_name'] = args['maintainer-name'];
-	if(args.hasOwnProperty("maintainer-email")) dataraw['maintainer_email'] = args['maintainer-email'];
-	if(args.hasOwnProperty("type")) dataraw['type'] = args['type'];
+	if(typeof args["name"] !== "undefined") dataraw['name'] = args['name'];
+	if(typeof args["description"] !== "undefined") dataraw['desc'] = args['description'];
+	if(typeof args["version"] !== "undefined") dataraw['version'] = args['version'];
+	if(typeof args["url"] !== "undefined") dataraw['url'] = args['url'];
+	if(typeof args["architecture"] !== "undefined") dataraw['architecture'] = args['architecture'];
+	if(typeof args["priority"] !== "undefined") dataraw['priority'] = args['priority'];
+	if(typeof args["cmdline"] !== "undefined") dataraw['run'] = args['cmdline'];
+	if(typeof args["maintainer-name"] !== "undefined") dataraw['maintainer_name'] = args['maintainer-name'];
+	if(typeof args["maintainer-email"] !== "undefined") dataraw['maintainer_email'] = args['maintainer-email'];
+	if(typeof args["type"] !== "undefined") dataraw['type'] = args['type'];
 	/* Dependency Configuration here */
-	if(args.hasOwnProperty("postinst-payload")) {
-		if(args.hasOwnProperty("input")) {
+	if(typeof args["postinst-payload"] !== "undefined") {
+		if(typeof args["input"] !== "undefined") {
 			dataraw['postinst_payload'] = fs.readFileSync(args['input']).toString();
 		}else{
 			dataraw['postinst_payload'] = open_editor('postinst', dataraw['postinst_payload']);
 		}
 	}
-	if(args.hasOwnProperty("prerm-payload")) {
-		if(args.hasOwnProperty("input")) {
+	if(typeof args["prerm-payload"] !== "undefined") {
+		if(typeof args["input"] !== "undefined") {
 			dataraw['prerm_payload'] = fs.readFileSync(args['input']).toString();
 		}else{
 			dataraw['prerm_payload'] = open_editor('prerm', dataraw['prerm_payload']);
@@ -281,14 +270,14 @@ function edit() {
 }
 
 function init() {
-	//var test = (args.hasOwnProperty("test")) ? args['test'] : rls.question("What is Test?");
-	var path            = (args.hasOwnProperty("path"))            ? args['path']            : rls.question("[FADe] Locate your project's dir: ");
-	var name            = (args.hasOwnProperty("name"))            ? args['name']            : rls.question("[FADe] Enter your project's name: ");
-	var version         = (args.hasOwnProperty("version"))         ? args['version']         : rls.question("[FADe] Enter your project's version: ");
-	var description     = (args.hasOwnProperty("description"))     ? args['description']     : rls.question("[FADe] Enter your project's description: ");
-	var url             = (args.hasOwnProperty("url"))             ? args['url']             : ret_default("url", "https://example.com/");
-	var architecture    = (args.hasOwnProperty("architecture"))    ? args['architecture']    : ret_default("architecture", "all");
-	var dependency_raw  = (args.hasOwnProperty("dependency"))      ? args['dependency']      : ret_default("dependency", "ask");
+	//var test = (typeof args["test"] !== "undefined") ? args['test'] : rls.question("What is Test?");
+	var path            = (typeof args["path"] !== "undefined")            ? args['path']            : rls.question("[FADe] Locate your project's dir: ");
+	var name            = (typeof args["name"] !== "undefined")            ? args['name']            : rls.question("[FADe] Enter your project's name: ");
+	var version         = (typeof args["version"] !== "undefined")         ? args['version']         : rls.question("[FADe] Enter your project's version: ");
+	var description     = (typeof args["description"] !== "undefined")     ? args['description']     : rls.question("[FADe] Enter your project's description: ");
+	var url             = (typeof args["url"] !== "undefined")             ? args['url']             : ret_default("url", "https://example.com/");
+	var architecture    = (typeof args["architecture"] !== "undefined")    ? args['architecture']    : ret_default("architecture", "all");
+	var dependency_raw  = (typeof args["dependency"] !== "undefined")      ? args['dependency']      : ret_default("dependency", "ask");
 		var dependency = "";
 		if (dependency_raw == "ask") {
 			dependency = rls.question("[FADe] Enter your project's dependency(seperated by comma): ");
@@ -300,11 +289,11 @@ function init() {
 		}else{
 			dependency = dependency_raw;
 		}
-	var priority        = (args.hasOwnProperty("priority"))        ? args['priority']        : ret_default("priority", "optional");
-	var cmdline         = (args.hasOwnProperty("cmdline"))         ? args['cmdline']         : rls.question("[FADe] Enter your project's cmdline: ");
-	var maintainer_name = (args.hasOwnProperty("maintainer-name")) ? args['maintainer-name'] : rls.question("[FADe] Enter maintainer's name: ");
-	var maintainer_email= (args.hasOwnProperty("maintainer-email"))? args['maintainer-email']: rls.question("[FADe] Enter maintainer's email: ");
-	var type            = (args.hasOwnProperty("type"))            ? args['type']            : rls.question("[FADe] Select type (systemd, isolated, normal): ")
+	var priority        = (typeof args["priority"] !== "undefined")        ? args['priority']        : ret_default("priority", "optional");
+	var cmdline         = (typeof args["cmdline"] !== "undefined")         ? args['cmdline']         : rls.question("[FADe] Enter your project's cmdline: ");
+	var maintainer_name = (typeof args["maintainer-name"] !== "undefined") ? args['maintainer-name'] : rls.question("[FADe] Enter maintainer's name: ");
+	var maintainer_email= (typeof args["maintainer-email"] !== "undefined")? args['maintainer-email']: rls.question("[FADe] Enter maintainer's email: ");
+	var type            = (typeof args["type"] !== "undefined")            ? args['type']            : rls.question("[FADe] Select type (systemd, isolated, normal): ")
 	var fadework        = path + '/.fadework';
 	var postinst_payload=`
 ## You may delete this line, but if you love FADe, please don't remove it.
