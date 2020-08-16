@@ -302,7 +302,7 @@ function edit() {
 		}
 	}
 
-	var data = JSON.stringify(dataraw);
+	var data = JSON.stringify(dataraw, null, 2);
 	fs.writeFileSync(fadework+'/fade.json', data);
 	console.log("[FADe] Your amendments were reflected.");
 }
@@ -363,7 +363,7 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 		type: type,
 		postinst_payload: postinst_payload,
 		prerm_payload: prerm_payload
-	});
+	}, null, 2);
 	if (fs.existsSync(path+"/fadework")) {
 		fs.rmdirSync(path+"/fadework", { recursive: true });
 	}
