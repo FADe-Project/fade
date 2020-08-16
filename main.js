@@ -251,7 +251,12 @@ function edit() {
 	if(typeof args["cmdline"] !== "undefined") dataraw['run'] = args['cmdline'];
 	if(typeof args["maintainer-name"] !== "undefined") dataraw['maintainer_name'] = args['maintainer-name'];
 	if(typeof args["maintainer-email"] !== "undefined") dataraw['maintainer_email'] = args['maintainer-email'];
-	if(typeof args["type"] !== "undefined") dataraw['type'] = args['type'];
+	if(typeof args["type"] !== "undefined") {
+		dataraw['type'] = args['type'];
+		console.log("[FADe] Type changed. Regenerating runbin...")
+		fs.unlinkSync(fadework+"/usr/bin/"+dataraw['name']);
+		fs.writeFileSync(fadework+"/usr/bin/"+dataraw['name'], generate_runbin(dataraw['name'], dataraw['cmdline'], dataraw['type']));
+	}
 	/* Dependency Configuration here */
 	if(typeof args['dependency-add'] !== "undefined") {
 		depArray = dataraw['depends'].split(", ");
