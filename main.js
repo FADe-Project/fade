@@ -20,6 +20,7 @@ const tmpjs = require('tmp');
 const copy = require('recursive-copy');
 const rls = require('readline-sync');
 const fs = require("fs");
+const rimraf = require("rimraf");
 const NodeRSA = require('node-rsa');
 const rsa = new NodeRSA({b: 256});
 var args = require('minimist')(process.argv.slice(2), {
@@ -139,7 +140,7 @@ function create_deb(path, host) {
 	fs.mkdirSync(data_tar_gz_datadir.name+"/usr");
 	var promise_copy1 = copy(fadework+"/usr",data_tar_gz_datadir.name+"/usr", {overwrite: true, expand: true, dot: true, junk: false, filter: ['**/*']});
 	promise_copy1.then(() => {
-		fs.rmdirSync(data_tar_gz_datadir.name+"/usr/lib/"+name, { recursive: true });
+		rimraf.sync(data_tar_gz_datadir.name+"/usr/lib/"+name);
 		fs.mkdirSync(data_tar_gz_datadir.name+"/usr/lib/"+name, 0755);
 		var promise_copy2 = copy(path, data_tar_gz_datadir.name+"/usr/lib/"+name, {overwrite: true, expand: true, dot: true, junk: false, filter: ['**/*']});
 		promise_copy2.then(() => {
@@ -370,10 +371,10 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 		prerm_payload: prerm_payload
 	}, null, 2);
 	if (fs.existsSync(path+"/fadework")) {
-		fs.rmdirSync(path+"/fadework", { recursive: true });
+		rimraf.sync(path+"/fadework");
 	}
 	if (fs.existsSync(fadework)) {
-		fs.rmdirSync(fadework, { recursive: true });
+		rimraf.sync(fadework);
 	}
 	if (!fs.existsSync(fadework)) {
 		fs.mkdirSync(fadework, 0755);
