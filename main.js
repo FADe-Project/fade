@@ -344,13 +344,13 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 
 ## Insert your post-install script here.
 ## If you need run as your user (if you're using systemd or isolated type) please use:
-## sudo -H -u (PROJECT NAME) (COMMAND)
+## sudo -H -u ${name} (COMMAND)
 
 `;
 	var prerm_payload   =`
 ## Insert your pre-remove script here.
 ## If you need run as your user (if you're using systemd or isolated type) please use:
-## sudo -H -u (PROJECT NAME) (COMMAND)
+## sudo -H -u ${name} (COMMAND)
 
 `;
 
