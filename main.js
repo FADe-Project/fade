@@ -136,6 +136,13 @@ function create_deb(path, host) {
 	var fadework = getFadework(path);
 	var dataraw = require(fadework+'/fade.json');
 	let { name, version, architecture } = dataraw;
+	if(process.platform == "win32") {
+		console.warn(`[FADe] You are building .deb binary on Windows.
+Due to NTFS Restrictions, It's not possible to set UNIX permission.
+I tried to support win32 platform, so postinst and prerm scripts will run perfectly.
+But your project data doesn't. So if you have a trouble with permission,
+Please do chmod on postinst script. Thank you.`);
+	}
 	var data_tar_gz_datadir = deb.set_data_tar_gz_datadir();
 	fs.mkdirSync(data_tar_gz_datadir.name+"/usr");
 	var promise_copy1 = copy(fadework+"/usr",data_tar_gz_datadir.name+"/usr", {overwrite: true, expand: true, dot: true, junk: false, filter: ['**/*']});
