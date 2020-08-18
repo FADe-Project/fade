@@ -139,7 +139,7 @@ function create_deb(path, host) {
 	if(process.platform == "win32") {
 		console.warn(`[FADe] You are building .deb binary on Windows.
 Due to NTFS Restrictions, It's not possible to set UNIX permission.
-I tried to support win32 platform, so postinst and prerm scripts will run perfectly.
+However, i tried to support win32 platform, so postinst and prerm scripts will run perfectly.
 But your project data doesn't. So if you have a trouble with permission,
 Please do chmod on postinst script. Thank you.`);
 	}
@@ -349,6 +349,9 @@ function init() {
 	var postinst_payload=`
 ## You may delete this line, but if you love FADe, please don't remove it.
 echo "Powered by Fully Automated Distribution enhanced (FADe)"
+
+## If you are building on win32, set permission on your files.
+chmod 755 /usr/bin/${name}
 
 ## Insert your post-install script here.
 ## If you need run as your user (if you're using systemd or isolated type) please use:
