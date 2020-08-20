@@ -136,6 +136,13 @@ function create_deb(path, host) {
 	var fadework = getFadework(path);
 	var dataraw = require(fadework+'/fade.json');
 	let { name, version, architecture } = dataraw;
+	if(typeof dataraw['depends'] == "string") {
+		console.warn("[FADe] Detected old comma-style depends field, migirating...");
+		depArray = dataraw['depends'].split(", ");
+		dataraw['depends'] = depArray;
+		var data = JSON.stringify(dataraw, null, 2);
+		fs.writeFileSync(fadework+'/fade.json', data);
+	}
 	if(process.platform == "win32") {
 		console.warn(`[FADe] You are building .deb binary on Windows.
 Due to NTFS Restrictions, It's not possible to set UNIX permission.
@@ -265,9 +272,13 @@ function edit() {
 		fs.unlinkSync(fadework+"/usr/bin/"+dataraw['name']);
 		fs.writeFileSync(fadework+"/usr/bin/"+dataraw['name'], generate_runbin(dataraw['name'], dataraw['cmdline'], dataraw['type']));
 	}
-	/* Dependency Configuration here */
-	if(typeof args['dependency-add'] !== "undefined") {
+	if(typeof dataraw['depends'] == "string") {
+		console.warn("[FADe] Detected old comma-style depends field, migirating...");
 		depArray = dataraw['depends'].split(", ");
+		dataraw['depends'] = depArray;
+	}
+	if(typeof args['dependency-add'] !== "undefined") {
+		depArray = dataraw['depends'];
 		depAdd = args['dependency-add'];
 		if(Array.isArray(depAdd)) {
 			depAdd.forEach((item, index) => {
@@ -276,14 +287,10 @@ function edit() {
 		}else{
 			depArray.push(depAdd);
 		}
-		dataraw['depends'] = "";
-		depArray.forEach((item, index) => {
-			dataraw['depends'] += (index != 0)?", ":"";
-			dataraw['depends'] += item;
-		});
+		dataraw['depends'] = depArray;
 	}
 	if(typeof args['dependency-rm'] !== "undefined") {
-		depArray = dataraw['depends'].split(", ");
+		depArray = dataraw['depends'];
 		depRm = args['dependency-rm'];
 		if(Array.isArray(depRm)) {
 			depArray = depArray.filter((val, index, arr) => {
@@ -294,11 +301,7 @@ function edit() {
 				return val != depRm;
 			});
 		}
-		dataraw['depends'] = "";
-		depArray.forEach((item, index) => {
-			dataraw['depends'] += (index != 0)?", ":"";
-			dataraw['depends'] += item;
-		});
+		dataraw['depends'] = depArray;
 	}
 	if(typeof args["postinst-payload"] !== "undefined") {
 		if(typeof args["input"] !== "undefined") {
@@ -331,14 +334,12 @@ function init() {
 	var dependency_raw  = (typeof args["dependency"] !== "undefined")      ? args['dependency']      : ret_default("dependency", "ask");
 		var dependency = "";
 		if (dependency_raw == "ask") {
-			dependency = rls.question("[FADe] Enter your project's dependency(seperated by comma): ");
+			dependency_raw = rls.question("[FADe] Enter your project's dependency(seperated by \", \"): ");
+			dependency = dependency_raw.split(", ");
 		}else if(Array.isArray(dependency_raw)) {
-			dependency_raw.forEach((item, index) => {
-				dependency += (index != 0)?", ":"";
-				dependency += item;
-			});
-		}else{
 			dependency = dependency_raw;
+		}else{
+			dependency = [ dependency_raw ];
 		}
 	var priority        = (typeof args["priority"] !== "undefined")        ? args['priority']        : ret_default("priority", "optional");
 	var cmdline         = (typeof args["cmdline"] !== "undefined")         ? args['cmdline']         : rls.question("[FADe] Enter your project's cmdline: ");
