@@ -90,7 +90,7 @@ function help(serious_mode) {
 	return_val += "\t--url \"https://example.com/\": Set your project's official website, Default is \"https://example.com\"\n";
 	return_val += "\t--priority optional: Set project's priority, Default is optional\n"
 	return_val += "\t--architecture all: Set project's destination system, Default is all\n";
-	return_val += "\t--depend[ency] nodejs: Set project's dependancies; this parameter can be used multiple times.\n"
+	return_val += "\t--depend[ency] nodejs: Set project's dependancies; this parameter can be used multiple times. or set \"none\" to disable dependency.\n"
 	return_val += "\t--cmdline \"node main.js\": Set your project's run command\n";
 	return_val += "\t--maintainer-name \"John Doe\": Set maintainer's name\n";
 	return_val += "\t--maintainer-email \"john@example.com\": Set maintainer's email address\n";
@@ -334,7 +334,7 @@ function init() {
 	var dependency_raw  = (typeof args["dependency"] !== "undefined")      ? args['dependency']      : ret_default("dependency", "ask");
 		var dependency = "";
 		if (dependency_raw == "ask") {
-			dependency_raw = rls.question("[FADe] Enter your project's dependency(seperated by \", \"): ");
+			dependency_raw = rls.question("[FADe] Enter your project's dependency(seperated by \", \", or enter \"none\"): ");
 			dependency = dependency_raw.split(", ");
 		}else if(Array.isArray(dependency_raw)) {
 			dependency = dependency_raw;
