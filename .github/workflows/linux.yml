@@ -41,6 +41,11 @@ jobs:
         COMMIT=$(git rev-parse HEAD | head -c 7)
         sudo dpkg --ignore-depends=nodejs -i fade_0.0.0-$COMMIT\_all.deb
         fade moo
+    - name: Create Compiled JS File
+      run: |
+        cd $GITHUB_WORKSPACE
+        sudo npm install -g @vercel/ncc
+        ncc build main.js -o dist -m
     # Runs a set of commands using the runners shell
     - name: Create Static Binary
       run: |
@@ -49,10 +54,18 @@ jobs:
         sudo npm install -g pkg
         pkg .
     
-    - name: Upload Artifacts
+    - name: Upload Static Binary
       uses: actions/upload-artifact@v2
       with:
         # Artifact name
-        name: Artifacts
+        name: Static Binary
         # A file, directory or wildcard pattern that describes what to upload
         path: fade-*
+
+     - name: Upload Compiled JS File
+      uses: actions/upload-artifact@v2
+      with:
+        # Artifact name
+        name: Compiled JS
+        # A file, directory or wildcard pattern that describes what to upload
+        path: dist/*
