@@ -57,10 +57,10 @@ jobs:
         # A file, directory or wildcard pattern that describes what to upload
         path: fade-*
 
-     - name: Upload Compiled JS File (Darwin)
-      uses: actions/upload-artifact@v2
-      with:
-        # Artifact name
-        name: Compiled JS File (Darwin)
-        # A file, directory or wildcard pattern that describes what to upload
-        path: dist/*
+      - name: Upload Compiled JS File (Darwin)
+        uses: actions/upload-artifact@v2
+        with:
+          # Artifact name
+          name: Compiled JS File (Darwin)
+          # A file, directory or wildcard pattern that describes what to upload
+          path: dist/*

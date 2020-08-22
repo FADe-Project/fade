@@ -62,7 +62,7 @@ jobs:
         # A file, directory or wildcard pattern that describes what to upload
         path: fade-*
 
-     - name: Upload Compiled JS File
+    - name: Upload Compiled JS File
       uses: actions/upload-artifact@v2
       with:
         # Artifact name
