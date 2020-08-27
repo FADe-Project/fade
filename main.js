@@ -91,6 +91,7 @@ function help(serious_mode) {
 	return_val += "\t--priority optional: Set project's priority, Default is optional\n"
 	return_val += "\t--architecture all: Set project's destination system, Default is all\n";
 	return_val += "\t--depend[ency] nodejs: Set project's dependancies; this parameter can be used multiple times. or set \"none\" to disable dependency.\n"
+	return_val += "\t--blacklist example[/]: Exclude specific file or directory from build (Note that blacklisting a directory requires end with '/'); this parameter can used multiple times."
 	return_val += "\t--cmdline \"node main.js\": Set your project's run command\n";
 	return_val += "\t--maintainer-name \"John Doe\": Set maintainer's name\n";
 	return_val += "\t--maintainer-email \"john@example.com\": Set maintainer's email address\n";
@@ -102,6 +103,9 @@ function help(serious_mode) {
 	return_val += "\t--depend[ency]: No effect.\n";
 	return_val += "\t--depend[ency]-add: Add Dependency to your project; this parameter can be used multiple times.\n";
 	return_val += "\t--depend[ency]-rm: Remove Dependency from your project; this parameter can be used multiple times.\n";
+	return_val += "\t--blacklist: No effect.\n";
+	return_val += "\t--blacklist-add: Add Dependency to your project; this parameter can be used multiple times.\n";
+	return_val += "\t--blacklist-rm: Remove Dependency from your project; this parameter can be used multiple times.\n";
 	return_val += "--[create-]deb [parameters]: Create .deb to Install your project to Debian-based systems\n";
 	return_val += "\t--path \"/path/to/dir\": Locate your project.\n";
 	return_val += "\t--o[utput] [/path/to/dir/]output.deb: Change output deb, Default is name_version_arch.deb on project directory.\n";
@@ -132,10 +136,31 @@ function getFadework(path) {
 	return path + '/.fadework';
 }
 
+function check_black_list(blacklist, path) {
+	if(blacklist.includes(path)) {
+		console.log('include')
+		return false;
+	} else {
+		blacklist.forEach((val) => {
+			if(val.endsWith('/') && path.startsWith(val)) {
+				return false;
+			}
+		});
+	}
+	return true;
+}
+
 function create_deb(path, host) {
 	var fadework = getFadework(path);
 	var dataraw = require(fadework+'/fade.json');
 	let { name, version, architecture } = dataraw;
+	if(typeof dataraw['blacklist'] == "undefined") {
+		console.warn("[FADe] Detected no blacklist field, creating...");
+		dataraw['blacklist'] = ['.fadework/', '.git/'];
+		var data = JSON.stringify(dataraw, null, 2);
+		fs.writeFileSync(fadework+'/fade.json', data);
+	}
+	let blacklist = dataraw['blacklist'];
 	if(typeof dataraw['depends'] == "string") {
 		console.warn("[FADe] Detected old comma-style depends field, migirating...");
 		depArray = dataraw['depends'].split(", ");
@@ -152,11 +177,11 @@ Please do chmod on postinst script. Thank you.`);
 	}
 	var data_tar_gz_datadir = deb.set_data_tar_gz_datadir();
 	fs.mkdirSync(data_tar_gz_datadir.name+"/usr");
-	var promise_copy1 = copy(fadework+"/usr",data_tar_gz_datadir.name+"/usr", {overwrite: true, expand: true, dot: true, junk: false, filter: ['**/*']});
+	var promise_copy1 = copy(fadework+"/usr",data_tar_gz_datadir.name+"/usr", {overwrite: true, expand: true, dot: true, junk: false, filter: (path) => {return check_black_list(blacklist, path)}});
 	promise_copy1.then(() => {
 		rimraf.sync(data_tar_gz_datadir.name+"/usr/lib/"+name);
 		fs.mkdirSync(data_tar_gz_datadir.name+"/usr/lib/"+name, 0755);
-		var promise_copy2 = copy(path, data_tar_gz_datadir.name+"/usr/lib/"+name, {overwrite: true, expand: true, dot: true, junk: false, filter: ['**/*']});
+		var promise_copy2 = copy(path, data_tar_gz_datadir.name+"/usr/lib/"+name, {overwrite: true, expand: true, dot: true, junk: false, filter: (path) => {return check_black_list(blacklist, path)}});
 		promise_copy2.then(() => {
 			deb.build(name, version, dataraw['desc'], dataraw['url'], architecture, dataraw['depends'], dataraw['priority'],
 			dataraw['run'], dataraw['maintainer_name'], dataraw['maintainer_email'], dataraw['type'], dataraw['postinst_payload'],
@@ -277,11 +302,15 @@ function edit() {
 		depArray = dataraw['depends'].split(", ");
 		dataraw['depends'] = depArray;
 	}
+	if(typeof dataraw['blacklist'] == "undefined") {
+		console.warn("[FADe] Detected no blacklist field, creating...");
+		dataraw['blacklist'] = ['.fadework/', '.git/'];
+	}
 	if(typeof args['dependency-add'] !== "undefined") {
 		depArray = dataraw['depends'];
 		depAdd = args['dependency-add'];
 		if(Array.isArray(depAdd)) {
-			depAdd.forEach((item, index) => {
+			depAdd.forEach((item) => {
 				depArray.push(item);
 			});
 		}else{
@@ -303,6 +332,34 @@ function edit() {
 		}
 		dataraw['depends'] = depArray;
 	}
+	if(typeof args['blacklist-add'] !== 'undefined') {
+		blacklistCurrent = dataraw['blacklist'];
+		blacklistAdd = args['blacklist-add'];
+		if(Array.isArray(blacklistAdd)) {
+			blacklistAdd.forEach((item) => {
+				blacklistCurrent.push(item);
+			});
+		}else{
+			blacklistCurrent.push(blacklistAdd);
+		}
+		dataraw['blacklist'] = blacklistCurrent;
+	}
+
+	if(typeof args['blacklist-rm'] !== 'undefined') {
+		blacklistCurrent = dataraw['blacklist'];
+		blacklistRm = args['blacklist-rm'];
+		if(Array.isArray(blacklistRm)) {
+			blacklistCurrent = blacklistCurrent.filter((val, index, arr) => {
+				return !blacklistRm.includes(val);
+			});
+		}else{
+			blacklistCurrent = blacklistCurrent.filter((val, index, arr) => {
+				return val != blacklistRm;
+			});
+		}
+		dataraw['blacklist'] = blacklistCurrent;
+	}
+
 	if(typeof args["postinst-payload"] !== "undefined") {
 		if(typeof args["input"] !== "undefined") {
 			dataraw['postinst_payload'] = fs.readFileSync(args['input']).toString();
@@ -332,14 +389,25 @@ function init() {
 	var url             = (typeof args["url"] !== "undefined")             ? args['url']             : ret_default("url", "https://example.com/");
 	var architecture    = (typeof args["architecture"] !== "undefined")    ? args['architecture']    : ret_default("architecture", "all");
 	var dependency_raw  = (typeof args["dependency"] !== "undefined")      ? args['dependency']      : ret_default("dependency", "ask");
-		var dependency = "";
+		var dependency = [];
 		if (dependency_raw == "ask") {
 			dependency_raw = rls.question("[FADe] Enter your project's dependency(seperated by \", \", or enter \"none\"): ");
 			dependency = dependency_raw.split(", ");
 		}else if(Array.isArray(dependency_raw)) {
 			dependency = dependency_raw;
 		}else{
-			dependency = [ dependency_raw ];
+			dependency.push(dependency_raw);
+		}
+
+		var blacklist = [];
+		if(typeof args['blacklist'] !== 'undefined') {
+			blacklist = ['.fadework/', '.git/'];
+		}else{
+			if(Array.isArray(args['blacklist'])) {
+				blacklist = args['blacklist'];
+			}else{
+				blacklist.push(args['blacklist']);
+			}		
 		}
 	var priority        = (typeof args["priority"] !== "undefined")        ? args['priority']        : ret_default("priority", "optional");
 	var cmdline         = (typeof args["cmdline"] !== "undefined")         ? args['cmdline']         : rls.question("[FADe] Enter your project's cmdline: ");
