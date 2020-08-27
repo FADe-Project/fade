@@ -25,7 +25,7 @@ jobs:
     - name: Test FADe (Phase 1)
       run: |
         npm install
-        node main.js --init --path . --name fade --version 0.0.0-citest --description "A project which everyone can make linux package easily" --url "https://github.com/fade-project/fade" --priority optional --architecture all --cmdline "node main.js" --dependency nodejs --maintainer-name "FADe Project" --maintainer-email "fade-linux@protonmail.com" --type normal
+        node main.js --init --path . --name fade --version 0.0.0-citest --description "A project which everyone can make linux package easily" --url "https://github.com/fade-project/fade" --priority optional --architecture all --cmdline "node main.js" --dependency nodejs --maintainer-name "FADe Project" --maintainer-email "fade-linux@protonmail.com" --type normal --blacklist .fadework/ --blacklist .git/
         node main.js --create-deb --path .
     - name: Upload .deb
       uses: actions/upload-artifact@v2
