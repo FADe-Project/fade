@@ -41,8 +41,9 @@ main();
 
 function generate_runbin(name, cmdline, type) {
     let str = "#!/bin/bash\n";
-    if(type == deb.types.systemd) {
-        str += `echo "Use systemctl start ${name} instead."\n`;
+    if(type == deb.types.service) {
+		str += `echo "Start ${name} service instead."
+echo "ex) systemctl start ${name}"\n`;
     } else if(type == deb.types.isolated) {
         str += `if [ $EUID -ne 0 ]; then
 echo "[FADe] To run this script securely, we need sudo privilege."
@@ -95,7 +96,7 @@ function help(serious_mode) {
 	return_val += "\t--cmdline \"node main.js\": Set your project's run command\n";
 	return_val += "\t--maintainer-name \"John Doe\": Set maintainer's name\n";
 	return_val += "\t--maintainer-email \"john@example.com\": Set maintainer's email address\n";
-	return_val += "\t--type [systemd, isolated, normal]: Set project's type. see manual to detail.\n\n"
+	return_val += "\t--type [service, isolated, normal]: Set project's type. see manual to detail.\n\n"
 	return_val += "--edit [parameters]: Edit your project's configuration with --init's parameters. Additional parameters:\n"
 	return_val += "\t--postinst-payload: Edit Post-Install Script's payload with your preferred editor.\n"
 	return_val += "\t--prerm-payload: Edit Pre-Remove Script's payload with your preferred editor.\n"
@@ -154,6 +155,13 @@ function create_deb(path, host) {
 	var fadework = getFadework(path);
 	var dataraw = require(fadework+'/fade.json');
 	let { name, version, architecture } = dataraw;
+	/* Code for Backward compatibility */
+	if(dataraw['type'] == "systemd") {
+		console.warn(`[FADe] "systemd" type is now deprecated, migrating to "service" type...`);
+		dataraw['type'] = "service";
+		var data = JSON.stringify(dataraw, null, 2);
+		fs.writeFileSync(fadework+'/fade.json', data);
+	}
 	if(typeof dataraw['blacklist'] == "undefined") {
 		console.warn("[FADe] Detected no blacklist field, creating...");
 		dataraw['blacklist'] = ['.fadework/', '.git/'];
@@ -168,6 +176,7 @@ function create_deb(path, host) {
 		var data = JSON.stringify(dataraw, null, 2);
 		fs.writeFileSync(fadework+'/fade.json', data);
 	}
+	/* End Code for Backward compatibility */
 	if(process.platform == "win32") {
 		console.warn(`[FADe] You are building .deb binary on Windows.
 Due to NTFS Restrictions, It's not possible to set UNIX permission.
@@ -297,6 +306,10 @@ function edit() {
 		fs.unlinkSync(fadework+"/usr/bin/"+dataraw['name']);
 		fs.writeFileSync(fadework+"/usr/bin/"+dataraw['name'], generate_runbin(dataraw['name'], dataraw['cmdline'], dataraw['type']));
 	}
+	if(dataraw['type'] == "systemd") {
+		console.warn(`[FADe] "systemd" type is now deprecated, migrating to "service" type...`);
+		dataraw['type'] = "service";
+	}
 	if(typeof dataraw['depends'] == "string") {
 		console.warn("[FADe] Detected old comma-style depends field, migirating...");
 		depArray = dataraw['depends'].split(", ");
@@ -413,7 +426,11 @@ function init() {
 	var cmdline         = (typeof args["cmdline"] !== "undefined")         ? args['cmdline']         : rls.question("[FADe] Enter your project's cmdline: ");
 	var maintainer_name = (typeof args["maintainer-name"] !== "undefined") ? args['maintainer-name'] : rls.question("[FADe] Enter maintainer's name: ");
 	var maintainer_email= (typeof args["maintainer-email"] !== "undefined")? args['maintainer-email']: rls.question("[FADe] Enter maintainer's email: ");
-	var type            = (typeof args["type"] !== "undefined")            ? args['type']            : rls.question("[FADe] Select type (systemd, isolated, normal): ")
+	var type            = (typeof args["type"] !== "undefined")            ? args['type']            : rls.question("[FADe] Select type (service, isolated, normal): ")
+	if(type == "systemd") {
+		type = "service";
+		console.warn(`[FADe] "systemd" type is now deprecated. Next time, Please use "service" type instead.`);
+	}
 	var fadework        = path + '/.fadework';
 	var postinst_payload=`
 ## You may delete this line, but if you love FADe, please don't remove it.
@@ -423,13 +440,13 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 chmod 755 /usr/bin/${name}
 
 ## Insert your post-install script here.
-## If you need run as your user (if you're using systemd or isolated type) please use:
+## If you need run as your user (if you're using service or isolated type) please use:
 ## sudo -H -u ${name} (COMMAND)
 
 `;
 	var prerm_payload   =`
 ## Insert your pre-remove script here.
-## If you need run as your user (if you're using systemd or isolated type) please use:
+## If you need run as your user (if you're using service or isolated type) please use:
 ## sudo -H -u ${name} (COMMAND)
 
 `;
