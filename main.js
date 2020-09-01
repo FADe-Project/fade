@@ -139,7 +139,6 @@ function getFadework(path) {
 
 function check_black_list(blacklist, path) {
 	if(blacklist.includes(path)) {
-		console.log('include')
 		return false;
 	} else {
 		blacklist.forEach((val) => {
