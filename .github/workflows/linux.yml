@@ -74,7 +74,7 @@ jobs:
         COMMIT=$(git rev-parse HEAD | head -c 7)
         git clone https://github.com/ldmsys/dummy-node-service
         node main.js --init --path dummy-node-service --name dummy-node-service --version 0.0.0-$COMMIT-dummy --description "Test" --url "https://github.com/ldmsys/dummy-node-service" --cmdline "node main.js" --dependency nodejs --maintainer-name "ldmsys" --maintainer-email "admin@ldmsys.net" --type service
-        node main.js --create-deb --path . --output dummy-node-service_0.0.0-$COMMIT-dummy_all.deb
+        node main.js --create-deb --path dummy-node-service --output dummy-node-service_0.0.0-$COMMIT-dummy_all.deb
     
     - name: Test FADe (Phase 3-2 / Upload to GitHub Artifact)
       uses: actions/upload-artifact@v2
