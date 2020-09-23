@@ -92,7 +92,7 @@ jobs:
 
     - name: Test FADe (Phase 3-4 / Remove Test)
       run: |
-        sudo dpkg -P dummy-node-service_0.0.0-$COMMIT-dummy_all.deb
+        sudo dpkg -P dummy-node-service
 
     - name: Create Compiled JS File
       run: |
