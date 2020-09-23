@@ -437,6 +437,9 @@ echo "Powered by Fully Automated Distribution enhanced (FADe)"
 
 ## If you are building on win32, set permission on your files.
 chmod 755 /usr/bin/${name}
+chmod 755 /usr/lib/${name}
+${(fs.existsSync(path+"/"+cmdline.split(' ')[0])) ? `chmod 755 /usr/lib/${name}/${cmdline.split(' ')[0]}` : ""}
+${(fs.existsSync(path+"/"+cmdline.split(' ')[1])) ? `chmod 755 /usr/lib/${name}/${cmdline.split(' ')[1]}` : ""}
 
 ## Insert your post-install script here.
 ## If you need run as your user (if you're using service or isolated type) please use:
