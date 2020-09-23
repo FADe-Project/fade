@@ -90,6 +90,10 @@ jobs:
         sudo dpkg --ignore-depends=nodejs -i dummy-node-service_0.0.0-$COMMIT-dummy_all.deb
         systemctl status dummy-node-service
 
+    - name: Test FADe (Phase 3-4 / Remove Test)
+      run: |
+        sudo dpkg -P dummy-node-service_0.0.0-$COMMIT-dummy_all.deb
+
     - name: Create Compiled JS File
       run: |
         cd $GITHUB_WORKSPACE
