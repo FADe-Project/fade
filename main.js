@@ -96,11 +96,12 @@ function help(serious_mode) {
 	return_val += "\t--cmdline \"node main.js\": Set your project's run command\n";
 	return_val += "\t--maintainer-name \"John Doe\": Set maintainer's name\n";
 	return_val += "\t--maintainer-email \"john@example.com\": Set maintainer's email address\n";
-	return_val += "\t--type [service, isolated, normal]: Set project's type. see manual to detail.\n\n"
+	return_val += "\t--type [service, isolated, normal]: Set project's type. see manual to detail.\n"
+	return_val += "\t--i[nput]: Use fade.json as pre-configure your project.\n\n"
 	return_val += "--edit [parameters]: Edit your project's configuration with --init's parameters. Additional parameters:\n"
 	return_val += "\t--postinst-payload: Edit Post-Install Script's payload with your preferred editor.\n"
 	return_val += "\t--prerm-payload: Edit Pre-Remove Script's payload with your preferred editor.\n"
-	return_val += "\t--input filename: Use file as postinst/prerm payload\n";
+	return_val += "\t--i[nput] filename: Use file as postinst/prerm payload\n";
 	return_val += "\t--depend[ency]: No effect.\n";
 	return_val += "\t--depend[ency]-add: Add Dependency to your project; this parameter can be used multiple times.\n";
 	return_val += "\t--depend[ency]-rm: Remove Dependency from your project; this parameter can be used multiple times.\n";
@@ -393,66 +394,70 @@ function edit() {
 }
 
 function init() {
-	//var test = (typeof args["test"] !== "undefined") ? args['test'] : rls.question("What is Test?");
-	var path            = (typeof args["path"] !== "undefined")            ? args['path']            : rls.question("[FADe] Locate your project's dir: ");
-	var name            = (typeof args["name"] !== "undefined")            ? args['name']            : rls.question("[FADe] Enter your project's name: ");
-	var version         = (typeof args["version"] !== "undefined")         ? args['version']         : rls.question("[FADe] Enter your project's version: ");
-	var description     = (typeof args["description"] !== "undefined")     ? args['description']     : rls.question("[FADe] Enter your project's description: ");
-	var url             = (typeof args["url"] !== "undefined")             ? args['url']             : ret_default("url", "https://example.com/");
-	var architecture    = (typeof args["architecture"] !== "undefined")    ? args['architecture']    : ret_default("architecture", "all");
-	var dependency_raw  = (typeof args["dependency"] !== "undefined")      ? args['dependency']      : ret_default("dependency", "ask");
-		var dependency = [];
-		if (dependency_raw == "ask") {
-			dependency_raw = rls.question("[FADe] Enter your project's dependency(seperated by \", \", or enter \"none\"): ");
-			dependency = dependency_raw.split(", ");
-		}else if(Array.isArray(dependency_raw)) {
-			dependency = dependency_raw;
-		}else{
-			dependency.push(dependency_raw);
-		}
-
-		var blacklist = [];
-		if(typeof args['blacklist'] !== 'undefined') {
-			blacklist = ['.fadework/', '.git/'];
-		}else{
-			if(Array.isArray(args['blacklist'])) {
-				blacklist = args['blacklist'];
+	let path = (typeof args["path"] !== "undefined") ? args['path'] : rls.question("[FADe] Locate your project's dir: ");
+	let fadework = path + '/.fadework';
+	let name, version, description, url, architecture, dependency, priority, cmdline, maintainer_name, maintainer_email, type, postinst_payload, prerm_payload, blacklist;
+	
+	if(typeof args["input"] !== "undefined") {
+		let i = require(args['input']);
+		name = i['name']; version = i['version']; description = i['desc'], url = i['url']; architecture = i['architecture']; dependency = i['depends'];
+		priority = i['priority']; cmdline = i['run']; maintainer_name = i['maintainer_name']; maintainer_email = i['maintainer_email']; type = i['type'];
+		postinst_payload = i['postinst_payload']; prerm_payload = i['prerm_payload']; blacklist = i['blacklist'];
+	}else{
+		name            = (typeof args["name"] !== "undefined")            ? args['name']            : rls.question("[FADe] Enter your project's name: ");
+		version         = (typeof args["version"] !== "undefined")         ? args['version']         : rls.question("[FADe] Enter your project's version: ");
+		description     = (typeof args["description"] !== "undefined")     ? args['description']     : rls.question("[FADe] Enter your project's description: ");
+		url             = (typeof args["url"] !== "undefined")             ? args['url']             : ret_default("url", "https://example.com/");
+		architecture    = (typeof args["architecture"] !== "undefined")    ? args['architecture']    : ret_default("architecture", "all");
+		let dependency_raw  = (typeof args["dependency"] !== "undefined")  ? args['dependency']      : ret_default("dependency", "ask");
+			dependency = [];
+			if (dependency_raw == "ask") {
+				dependency_raw = rls.question("[FADe] Enter your project's dependency(seperated by \", \", or enter \"none\"): ");
+				dependency = dependency_raw.split(", ");
+			}else if(Array.isArray(dependency_raw)) {
+				dependency = dependency_raw;
 			}else{
-				blacklist.push(args['blacklist']);
-			}		
-		}
-	var priority        = (typeof args["priority"] !== "undefined")        ? args['priority']        : ret_default("priority", "optional");
-	var cmdline         = (typeof args["cmdline"] !== "undefined")         ? args['cmdline']         : rls.question("[FADe] Enter your project's cmdline: ");
-	var maintainer_name = (typeof args["maintainer-name"] !== "undefined") ? args['maintainer-name'] : rls.question("[FADe] Enter maintainer's name: ");
-	var maintainer_email= (typeof args["maintainer-email"] !== "undefined")? args['maintainer-email']: rls.question("[FADe] Enter maintainer's email: ");
-	var type            = (typeof args["type"] !== "undefined")            ? args['type']            : rls.question("[FADe] Select type (service, isolated, normal): ")
-	if(type == "systemd") {
-		type = "service";
-		console.warn(`[FADe] "systemd" type is now deprecated. Next time, Please use "service" type instead.`);
-	}
-	var fadework        = path + '/.fadework';
-	var postinst_payload=`
+				dependency.push(dependency_raw);
+			}
+
+			blacklist = [];
+			if(typeof args['blacklist'] !== 'undefined') {
+				blacklist = ['.fadework/', '.git/'];
+			}else{
+				if(Array.isArray(args['blacklist'])) {
+					blacklist = args['blacklist'];
+				}else{
+					blacklist.push(args['blacklist']);
+				}		
+			}
+		priority        = (typeof args["priority"] !== "undefined")        ? args['priority']        : ret_default("priority", "optional");
+		cmdline         = (typeof args["cmdline"] !== "undefined")         ? args['cmdline']         : rls.question("[FADe] Enter your project's cmdline: ");
+		maintainer_name = (typeof args["maintainer-name"] !== "undefined") ? args['maintainer-name'] : rls.question("[FADe] Enter maintainer's name: ");
+		maintainer_email= (typeof args["maintainer-email"] !== "undefined")? args['maintainer-email']: rls.question("[FADe] Enter maintainer's email: ");
+		type            = (typeof args["type"] !== "undefined")            ? args['type']            : rls.question("[FADe] Select type (service, isolated, normal): ");
+		postinst_payload=`
 ## You may delete this line, but if you love FADe, please don't remove it.
 echo "Powered by Fully Automated Distribution enhanced (FADe)"
 
 ## If you are building on win32, set permission on your files.
 chmod 755 /usr/bin/${name}
-chmod 755 /usr/lib/${name}
-${(fs.existsSync(path+"/"+cmdline.split(' ')[0])) ? `chmod 755 /usr/lib/${name}/${cmdline.split(' ')[0]}` : ""}
-${(fs.existsSync(path+"/"+cmdline.split(' ')[1])) ? `chmod 755 /usr/lib/${name}/${cmdline.split(' ')[1]}` : ""}
 
 ## Insert your post-install script here.
 ## If you need run as your user (if you're using service or isolated type) please use:
 ## sudo -H -u ${name} (COMMAND)
 
 `;
-	var prerm_payload   =`
+		prerm_payload=`
 ## Insert your pre-remove script here.
 ## If you need run as your user (if you're using service or isolated type) please use:
 ## sudo -H -u ${name} (COMMAND)
 
 `;
-
+	}
+	if(type == "systemd") {
+		type = "service";
+		console.warn(`[FADe] "systemd" type is now deprecated. Next time, Please use "service" type instead.`);
+	}
 	var data = JSON.stringify({
         name: name,
 		version: version,
