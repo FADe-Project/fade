@@ -1,14 +1,6 @@
 #!/usr/bin/env node
 
-//    _______   ___        ___             _         __ 
-//   / __/ _ | / _ \___   / _ \_______    (_)__ ____/ /_
-//  / _// __ |/ // / -_) / ___/ __/ _ \  / / -_) __/ __/
-// /_/ /_/ |_/____/\__/ /_/  /_/  \___/_/ /\__/\__/\__/ 
-//                                   |___/              
-//
-//  FADe Project (Frontend) Source code
-//  This program is distributed under MIT License.
-//  Copyright (C) ldmsys, All rights reserved.
+throw new Error("THIS CODE IS NOW VOID. PLEASE DELETE BEFORE MERGE PR");
 
 // Load our precious subprojects
 const fade_version = "Git Version";
