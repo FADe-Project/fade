@@ -1,11 +1,8 @@
 import {promises as fs} from 'fs';
-import child_process from 'child_process';
 import tar from 'tar-stream';
-import tmpjs from 'tmp';
 import rimraf from 'rimraf';
 import zlib from 'zlib';
 import tarfs from 'tar-fs';
-import { release } from 'os';
 import { FADeConfiguration } from '../utils'
 
 const debTypes = {
@@ -34,35 +31,6 @@ export interface arHeaderRaw {
     group_id: Number,
     filemode: Number,
     filesize: Number
-}
-
-export async function openEditor(filename: String, filedata: string): Promise<String> {
-    if(!process.env.EDITOR) {
-        if(process.platform === "win32") {
-            if(release().split('.')[0] == "10" && parseInt(release().split('.')[2]) >= 17763) {
-                console.warn("[FADe] %EDITOR% not set, defaulting to notepad.exe");
-				process.env.EDITOR = "notepad.exe"
-            }else {
-				throw new Error(`[FADe] %EDITOR% not set and Your notepad.exe dosen't support LF Ending.
-Please download your preferred editor from the Internet. We recommend vim or nano
- - Vim: https://www.vim.org/download.php#pc
- - Nano: https://www.nano-editor.org/dist/win32-support/
- 
-Put downloaded binary into C:\\Windows\\system32 or your working directory, and Please type before run FADe:
-> set EDITOR=(binary).exe`);
-			}
-		}else{
-            console.warn("[FADe] $EDITOR not set, defaulting to vi");
-            process.env.EDITOR = "vi"
-        }
-    }
-    let tmpfile = tmpjs.tmpNameSync();
-    console.log(`[FADe] Opening ${filename} with $EDITOR.`);
-    await fs.writeFile(tmpfile, filedata);
-    await child_process.spawn(process.env.EDITOR, [tmpfile], { stdio: 'inherit', detached: true});
-    let return_val = (await fs.readFile(tmpfile)).toString();
-    await fs.unlink(tmpfile);
-    return return_val;
 }
 
 export function genArHeader(input: arHeaderRaw): Buffer {
