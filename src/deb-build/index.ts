@@ -26,11 +26,11 @@ export { debTypes, arMagicHeader, debianbinaryData, debianbinaryHeader}
 
 export interface arHeaderRaw {
     filename: string,
-    timestamp: Number,
-    owner_id: Number,
-    group_id: Number,
-    filemode: Number,
-    filesize: Number
+    timestamp: number,
+    owner_id: number,
+    group_id: number,
+    filemode: number,
+    filesize: number
 }
 
 export function genArHeader(input: arHeaderRaw): Buffer {
@@ -52,7 +52,7 @@ export interface controlTarGzRaw {
     prerm: string
 }
 
-function addComma(depends: Array<String>): String {
+function addComma(depends: Array<string>): string {
     let commadeps = "";
     depends.forEach((item, index) => {
         commadeps += (index !== 0) ? ", " : '';
@@ -61,7 +61,7 @@ function addComma(depends: Array<String>): String {
     return commadeps;
 }
 
-export function genControl(input: FADeConfiguration): String {
+export function genControl(input: FADeConfiguration): string {
     return `Package: ${input.name}
 Version: ${input.version}
 Priority: ${input.priority}
@@ -73,7 +73,7 @@ Description: ${input.desc}
 `
 }
 
-export function genPreRm(input: FADeConfiguration): String {
+export function genPreRm(input: FADeConfiguration): string {
     return `#!/bin/bash
 ${input.prerm_payload}
 ${(input.type == debTypes.service)?`
@@ -98,7 +98,7 @@ rm -rf /usr/lib/${input.name}
 mkdir /usr/lib/${input.name}`;
 }
 
-export function genPostInst(input: FADeConfiguration): String {
+export function genPostInst(input: FADeConfiguration): string {
     return `#!/bin/bash
 ${(input.type == debTypes.service)?`
 useradd -r -s /sbin/nologin -g nogroup -d /usr/lib/${input.name} -c "${input.desc}" ${input.name}

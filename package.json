@@ -4,8 +4,7 @@
   "description": "A project which everyone can make linux package easily.",
   "main": "dist/",
   "dependencies": {
-    "@fade-project/buffer-server": "^1.0.0",
-    "@fade-project/deb-build": "^1.2.0",
+    "buffer-server": "^1.2.0",
     "minimist": "^1.2.5",
     "node-rsa": "^1.1.1",
     "readline-sync": "^1.4.10",
