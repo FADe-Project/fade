@@ -27,6 +27,13 @@ export interface FADeConfiguration {
     prerm_payload: string,
     blacklist: Array<string>
 }
+
+export function CriticalError(msg: string, exitcode?: number) {
+    console.error(`[FADe] ${msg}`);
+    console.error(`[FADe] Can't continue. Stopping with error code ${exitcode?exitcode:1}`);
+    return exitcode?exitcode:1
+}
+
 export async function getFADeConfig(path: string): Promise<FADeConfiguration> {
     return <FADeConfiguration>JSON.parse(await fs.readFile(`${path}/.fadework/fade.json`, { encoding: "utf-8"}));
 }
