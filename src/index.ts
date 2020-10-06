@@ -67,7 +67,7 @@ Copyright (C) ldmsys, All rights reserved.
     --maintainer-name MAINTAINTER_NAME: Set maintainer's name. [REQUIRED]
     --maintainer-email MAINATINER_EMAIL: Set maintainer's email. [REQUIRED]
     --type [service, isolated, normal] : Set project's type. See docs. [REQUIRED]
-    --depend[ency] DEPENDENCY: Set project's dependency. [REQUIRED, MULTIPLE]
+    --depend[ency] DEPENDENCY: Set project's dependency. [MULTIPLE]
     --url URL: Set project's official website. Default is "https://example.com/"
     --priority PRIORITY: Set project's priority. Default is "optional"
     --arch[itecture] ARCHITECTURE: Set project's architecture. Default is "all"
