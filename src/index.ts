@@ -10,7 +10,7 @@
 
 const fade_version = "Git Version";
 
-import {promises as fs} from 'fs';
+import fsLegacy, {promises as fs} from 'fs';
 import minimist from 'minimist';
 import { args2config, CriticalError, FADeConfiguration, genRunbin, getFADeConfig, isFadeworkPresent, isSameOrUndef, openEditor, stubCreateDeb, validate } from './utils';
 
@@ -40,7 +40,7 @@ async function main() {
     if(typeof args.help !== "undefined") {
         console.log(help(false));
     }else if(typeof args.init !== "undefined") {
-        console.log("init");
+        init(args.path, args2config(args));
     }else if(typeof args.edit !== "undefined") {
         edit(args.path, args2config(args), !!args['edit-postinst-payload'], !!args['edit-prerm-payload']);
     }else if(typeof args["create-deb"] !== "undefined") {
@@ -132,6 +132,9 @@ async function edit(path: string, requested: FADeConfiguration, editPostinst?: b
 }
 
 async function init(path: string, requested: FADeConfiguration): Promise<undefined> {
+    if(!fsLegacy.existsSync(path)) {
+        CriticalError(`${path}: No such file or directory`);
+    }
     if(isFadeworkPresent(path, true)) {
         CriticalError("Found fadework/ or ./fadework directory. Please delete that directory to initalize project.")
     }
@@ -206,7 +209,7 @@ chmod 755 /usr/bin/${name}
     console.log(`[FADe] Initialization succeed.
 [FADe] Please refer docs and --help to next process.
 `);
-    if(requested.postinst_payload || requested.prerm_payload) {
+    if(!requested.postinst_payload && !requested.prerm_payload) {
         console.log(`[FADe] To edit your prerm and postinst payload, Please run:
 [FADe] --edit --path PATH [--edit-postinst-payload] [--edit-prerm-payload]`);
     }
