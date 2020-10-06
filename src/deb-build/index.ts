@@ -67,7 +67,7 @@ Version: ${input.version}
 Priority: ${input.priority}
 Architecture: ${input.architecture}
 Maintainer: ${input.maintainer_name} <${input.maintainer_email}>
-Depends: ${addComma(input.depends)}
+${(input.depends.length === 0)?"":`Depends: ${addComma(input.depends)}`}
 Homepage: ${input.url}
 Description: ${input.desc}
 `

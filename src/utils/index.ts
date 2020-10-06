@@ -6,7 +6,6 @@ import copy from 'recursive-copy';
 import { release } from 'os';
 import child_process from 'child_process';
 import tmpjs from 'tmp';
-
 import buffer_server from 'buffer-server';
 import NodeRSA from 'node-rsa';
 import minimist from 'minimist';
