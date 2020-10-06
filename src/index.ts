@@ -133,7 +133,7 @@ async function edit(path: string, requested: FADeConfiguration, editPostinst?: b
 
 async function init(path: string, requested: FADeConfiguration): Promise<undefined> {
     if(isFadeworkPresent(path, true)) {
-        throw new Error("Found fadework/ or ./fadework directory. Please delete that directory to initalize project.")
+        CriticalError("Found fadework/ or ./fadework directory. Please delete that directory to initalize project.")
     }
     const defaultConfig = {
         name: '',

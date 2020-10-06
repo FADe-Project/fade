@@ -66,10 +66,10 @@ export function args2config(args: minimist.ParsedArgs): FADeConfiguration {
 
 export async function validate(path: string): Promise<boolean> {
     if(!isFadeworkPresent(path, true)) {
-        throw new Error("fadework/ or .fadework/ not found, please do --init.");
+        CriticalError("fadework/ or .fadework/ not found, please do --init.");
     }
     if(fsLegacy.existsSync(`${path}/fadework/fade-electron.json`) || fsLegacy.existsSync(`${path}/fadework/internal-sh`)) {
-        throw new Error("FADe Project was reborn from scratch, so this project is not compatible. Please do --init.");
+        CriticalError("FADe Project was reborn from scratch, so this project is not compatible. Please do --init.");
     }else if(fsLegacy.existsSync(`${path}/fadework`)){
         console.log(`[FADe] Found Legacy FADe directory, migrating...`);
         await fs.rename(`${path}/fadework`, `${path}/.fadework`)
@@ -82,7 +82,7 @@ export async function validate(path: string): Promise<boolean> {
         modified = true;
     }
     if(data.type !== debTypes.isolated && data.type !== debTypes.service && data.type !== debTypes.normal) {
-        throw new Error("Invalid type. see docs for valid types.");
+        CriticalError("Invalid type. see docs for valid types.");
     }
     if(typeof data.blacklist === "undefined") {
 		console.warn("[FADe] Detected no blacklist field, creating...");
@@ -143,7 +143,7 @@ export async function openEditor(filename: string, filedata: string): Promise<st
                 console.warn("[FADe] %EDITOR% not set, defaulting to notepad.exe");
 				process.env.EDITOR = "notepad.exe"
             }else {
-				throw new Error(`[FADe] %EDITOR% not set and Your notepad.exe dosen't support LF Ending.
+				CriticalError(`[FADe] %EDITOR% not set and Your notepad.exe dosen't support LF Ending.
 Please download your preferred editor from the Internet. We recommend vim or nano
  - Vim: https://www.vim.org/download.php#pc
  - Nano: https://www.nano-editor.org/dist/win32-support/
@@ -159,7 +159,7 @@ Put downloaded binary into C:\\Windows\\system32 or your working directory, and 
     let tmpfile = tmpjs.tmpNameSync();
     console.log(`[FADe] Opening ${filename} with $EDITOR.`);
     await fs.writeFile(tmpfile, filedata);
-    await child_process.spawn(process.env.EDITOR, [tmpfile], { stdio: 'inherit', detached: true});
+    await child_process.spawn(<string>process.env.EDITOR, [tmpfile], { stdio: 'inherit', detached: true});
     let return_val = (await fs.readFile(tmpfile)).toString();
     await fs.unlink(tmpfile);
     return return_val;
