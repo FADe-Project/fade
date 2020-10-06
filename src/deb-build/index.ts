@@ -1,6 +1,4 @@
-import {promises as fs} from 'fs';
 import tar from 'tar-stream';
-import rimraf from 'rimraf';
 import zlib from 'zlib';
 import tarfs from 'tar-fs';
 import { FADeConfiguration } from '../utils'
