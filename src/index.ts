@@ -197,17 +197,17 @@ async function init(path: string, requested: FADeConfiguration): Promise<undefin
 echo "Powered by Fully Automated Distribution enhanced (FADe)"
 
 ## If you are building on win32, set permission on your files.
-chmod 755 /usr/bin/${name}
+chmod 755 /usr/bin/(PROJECT NAME)
 
 ## Insert your post-install script here.
 ## If you need run as your user (if you're using service or isolated type) please use:
-## sudo -H -u ${name} (COMMAND)
+## sudo -H -u (PROJECT NAME) (COMMAND)
 
 `,
         prerm_payload: `
 ## Insert your pre-remove script here.
 ## If you need run as your user (if you're using service or isolated type) please use:
-## sudo -H -u ${name} (COMMAND)
+## sudo -H -u (PROJECT NAME) (COMMAND)
 
 `,
         blacklist: ['.fadework/', '.git/']
@@ -244,6 +244,8 @@ chmod 755 /usr/bin/${name}
     typeof candidate.blacklist === "undefined" ? candidate.blacklist = defaultConfig.blacklist: undefined;
     typeof candidate.depends === "undefined" ? candidate.depends = defaultConfig.depends: undefined;
     typeof candidate.priority === "undefined" ? candidate.priority = defaultConfig.priority: undefined;
+    candidate.postinst_payload = candidate.postinst_payload.replace('(PROJECT NAME)', candidate.name);
+    candidate.prerm_payload = candidate.postinst_payload.replace('(PROJECT NAME)', candidate.name);
 
     await fs.writeFile(`${path}/.fadework/fade.json`, JSON.stringify(candidate, null, 2));
     await validate(path);
