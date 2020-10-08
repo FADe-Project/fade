@@ -31,7 +31,7 @@ export interface FADeConfiguration {
 export function CriticalError(msg: string, exitcode?: number) {
     console.error(`[FADe] ${msg}`);
     console.error(`[FADe] Can't continue. Stopping with error code ${exitcode?exitcode:1}`);
-    return exitcode?exitcode:1
+    process.exit(exitcode?exitcode:1);
 }
 
 export async function getFADeConfig(path: string): Promise<FADeConfiguration> {
