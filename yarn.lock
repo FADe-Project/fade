@@ -162,10 +162,10 @@ brace-expansion@^1.1.7:
     balanced-match "^1.0.0"
     concat-map "0.0.1"
 
-buffer-server@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/buffer-server/-/buffer-server-1.2.0.tgz#a60491f117ef99390d564cc9c2d0039a0ef0bf63"
-  integrity sha512-O42lqaUU2kKBMiZGLK8BBCMtz/qsJnmitL9J1Fs1CyDELJ/RoMKjWmuViAV/SUd6vUN76LfVyGaQ89MR46tLmw==
+buffer-server@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/buffer-server/-/buffer-server-1.2.1.tgz#04a67058eb2b99044c0cb655880ffd87de4a530e"
+  integrity sha512-Nd6ctp3KC01+EyaQfmUbLMExwyE2tjKwDEXmEX0/wW2DM9BZcNjZfJh449gQj2LzjFOX7nl0gGbGKdqfrF0CEw==
   dependencies:
     express "^4.17.1"
     ssh2 "^0.8.9"
