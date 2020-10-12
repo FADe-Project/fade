@@ -65,6 +65,9 @@ export function args2config(args: minimist.ParsedArgs): FADeConfiguration {
 }
 
 export async function validate(path: string): Promise<boolean> {
+    if(path === undefined) {
+        CriticalError("--path parameter missing.");
+    }
     if(!isFadeworkPresent(path, true)) {
         CriticalError("fadework/ or .fadework/ not found, please do --init.");
     }
@@ -159,7 +162,7 @@ Put downloaded binary into C:\\Windows\\system32 or your working directory, and 
     let tmpfile = tmpjs.tmpNameSync();
     console.log(`[FADe] Opening ${filename} with $EDITOR.`);
     await fs.writeFile(tmpfile, filedata);
-    await child_process.spawn(<string>process.env.EDITOR, [tmpfile], { stdio: 'inherit', detached: true});
+    child_process.spawnSync(process.env.EDITOR as string, [tmpfile], { stdio: 'inherit', detached: true } as any);
     let return_val = (await fs.readFile(tmpfile)).toString();
     await fs.unlink(tmpfile);
     return return_val;
