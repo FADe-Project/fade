@@ -55,6 +55,7 @@ export function args2config(args: minimist.ParsedArgs): FADeConfiguration {
         architecture: args.architecture,
         depends: (typeof args.dependency === "string") ? [ args.dependency ] : args.dependency,
         priority: args.priority,
+        run: args.run,
         maintainer_name: args['maintainer-name'],
         maintainer_email: args['maintainer-email'],
         type: args.type,
