@@ -80,7 +80,7 @@ export async function validate(path: string): Promise<boolean> {
     }
     const data = await getFADeConfig(path);
     let modified = false as boolean;
-    if(data.type === debTypes.systemd) {
+    if(data.type === "systemd") {
         console.warn(`[FADe] "systemd" type is now deprecated, migrating to "service" type...`);
         data.type = "service";
         modified = true;
