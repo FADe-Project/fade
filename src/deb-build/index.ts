@@ -73,7 +73,9 @@ Description: ${input.desc}
 
 export function genPreRm(input: FADeConfiguration): string {
     return `#!/bin/bash
+pushd /usr/lib/${input.name}
 ${input.prerm_payload}
+popd
 ${(input.type == debTypes.service)?`
 if [ "$(uname)" != "Linux" ]; then
     sleep 1
@@ -103,6 +105,7 @@ useradd -r -s /sbin/nologin -g nogroup -d /usr/lib/${input.name} -c "${input.des
 chown -R ${input.name}:root /usr/lib/${input.name}
 `:''}
 echo "${input.name} v${input.version} by ${input.maintainer_name} <${input.maintainer_email}>"
+cd /usr/lib/${input.name}
 ${input.postinst_payload}
 ${(input.type == debTypes.service)?`
 if [ "$(uname)" != "Linux" ]; then
