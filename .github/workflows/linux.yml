@@ -31,6 +31,8 @@ jobs:
         COMMIT=$(git rev-parse HEAD | head -c 7)
         node dist/ --init --path . --name fade --version 0.0.0-$COMMIT --description "A project which everyone can make linux package easily" --url "https://github.com/fade-project/fade" --priority optional --architecture all --cmdline "node dist/" --dependency nodejs --maintainer-name "FADe Project" --maintainer-email "fade-linux@protonmail.com" --type normal --blacklist .fadework/ --blacklist .git/
         node dist/ --create-deb --path .
+        ls -al
+        pwd
 
     - name: Test FADe (Phase 1-2 / Upload to GitHub Artifact)
       uses: actions/upload-artifact@v2
@@ -42,6 +44,8 @@ jobs:
   
     - name: Test FADe (Phase 1-3 / normal type (self packaged))
       run: |
+        ls -al
+        pwd
         COMMIT=$(git rev-parse HEAD | head -c 7)
         sudo dpkg --ignore-depends=nodejs -i fade_0.0.0-$COMMIT\_all.deb
         fade moo
