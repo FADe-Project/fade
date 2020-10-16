@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Test on Linux
+name: Unit Test (Ubuntu latest)
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -24,11 +24,12 @@ jobs:
     
     - name: Test FADe (Phase 1-1 / normal type (self packaged))
       run: |
-        cd $GITHUB_WORKSPACE
-        npm install
+        sudo npm install -g typescript
+        yarn install
+        tsc
         COMMIT=$(git rev-parse HEAD | head -c 7)
-        node main.js --init --path . --name fade --version 0.0.0-$COMMIT --description "A project which everyone can make linux package easily" --url "https://github.com/fade-project/fade" --priority optional --architecture all --cmdline "node main.js" --dependency nodejs --maintainer-name "FADe Project" --maintainer-email "fade-linux@protonmail.com" --type normal --blacklist .fadework/ --blacklist .git/
-        node main.js --create-deb --path .
+        node dist/ --init --path . --name fade --version 0.0.0-$COMMIT --description "A project which everyone can make linux package easily" --url "https://github.com/fade-project/fade" --priority optional --architecture all --cmdline "node dist/" --dependency nodejs --maintainer-name "FADe Project" --maintainer-email "fade-linux@protonmail.com" --type normal --blacklist .fadework/ --blacklist .git/
+        node dist/ --create-deb --path .
 
     - name: Test FADe (Phase 1-2 / Upload to GitHub Artifact)
       uses: actions/upload-artifact@v2
@@ -46,13 +47,14 @@ jobs:
 
     - name: Test FADe (Phase 2-1 / isolated type (self packaged))
       run: |
-        cd $GITHUB_WORKSPACE
-        git stash
-        git reset
-        npm install
+        git clean -df
+        git reset --hard
+        rm -rf .fadework
+        yarn install
+        tsc
         COMMIT=$(git rev-parse HEAD | head -c 7)
-        node main.js --init --path . --name fade --version 0.0.0-$COMMIT-isolated --description "A project which everyone can make linux package easily" --url "https://github.com/fade-project/fade" --priority optional --architecture all --cmdline "node main.js" --dependency nodejs --maintainer-name "FADe Project" --maintainer-email "fade-linux@protonmail.com" --type isolated --blacklist .fadework/ --blacklist .git/
-        node main.js --create-deb --path .
+        node dist/ --init --path . --name fade --version 0.0.0-$COMMIT-isolated --description "A project which everyone can make linux package easily" --url "https://github.com/fade-project/fade" --priority optional --architecture all --cmdline "node dist/" --dependency nodejs --maintainer-name "FADe Project" --maintainer-email "fade-linux@protonmail.com" --type isolated --blacklist .fadework/ --blacklist .git/
+        node dist/ --create-deb --path .
 
     - name: Test FADe (Phase 2-2 / Upload to GitHub Artifact)
       uses: actions/upload-artifact@v2
@@ -70,11 +72,10 @@ jobs:
 
     - name: Test FADe (Phase 3-1 / service type (Dummy Service))
       run: |
-        cd $GITHUB_WORKSPACE
         COMMIT=$(git rev-parse HEAD | head -c 7)
         git clone https://github.com/ldmsys/dummy-node-service
-        node main.js --init --path dummy-node-service --name dummy-node-service --version 0.0.0-$COMMIT-dummy --description "Test" --url "https://github.com/ldmsys/dummy-node-service" --cmdline "node main.js" --dependency nodejs --maintainer-name "ldmsys" --maintainer-email "admin@ldmsys.net" --type service
-        node main.js --create-deb --path ./dummy-node-service --output dummy-node-service_0.0.0-$COMMIT-dummy_all.deb
+        node dist/ --init --path dummy-node-service --name dummy-node-service --version 0.0.0-$COMMIT-dummy --description "Test" --url "https://github.com/ldmsys/dummy-node-service" --cmdline "node main.js" --dependency nodejs --maintainer-name "ldmsys" --maintainer-email "admin@ldmsys.net" --type service
+        node dist/ --create-deb --path ./dummy-node-service --output dummy-node-service_0.0.0-$COMMIT-dummy_all.deb
     
     - name: Test FADe (Phase 3-2 / Upload to GitHub Artifact)
       uses: actions/upload-artifact@v2
@@ -98,7 +99,7 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE
         sudo npm install -g @vercel/ncc
-        ncc build main.js -o dist -m
+        ncc build dist/ -o ncced -m
     # Runs a set of commands using the runners shell
     - name: Create Static Binary
       run: |

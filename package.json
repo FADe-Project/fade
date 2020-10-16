@@ -2,20 +2,29 @@
   "name": "fade",
   "version": "0.0.1",
   "description": "A project which everyone can make linux package easily.",
-  "main": "main.js",
+  "main": "dist/",
   "dependencies": {
-    "@fade-project/buffer-server": "^1.0.0",
-    "@fade-project/deb-build": "^1.2.0",
+    "buffer-server": "^1.2.1",
     "minimist": "^1.2.5",
     "node-rsa": "^1.1.1",
     "readline-sync": "^1.4.10",
     "recursive-copy": "^2.0.10",
     "rimraf": "^3.0.2",
+    "tar-fs": "^2.1.0",
+    "tar-stream": "^2.1.4",
     "tmp": "^0.2.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/minimist": "^1.2.0",
+    "@types/node-rsa": "^1.0.0",
+    "@types/readline-sync": "^1.4.3",
+    "@types/rimraf": "^3.0.0",
+    "@types/tar-fs": "^2.0.0",
+    "@types/tar-stream": "^2.1.0",
+    "@types/tmp": "^0.2.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "tsc && node dist/"
   },
   "repository": {
     "type": "git",
@@ -28,6 +37,6 @@
   },
   "homepage": "https://github.com/fade-project/fade#readme",
   "bin": {
-    "app": "./main.js"
+    "app": "dist/index.js"
   }
 }
