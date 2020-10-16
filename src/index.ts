@@ -33,7 +33,8 @@ async function main() {
             'input-postinst': 'input-postinst-payload',
             'input-prerm': 'input-prerm-payload',
             'edit-postinst': 'edit-postinst-payload',
-            'edit-prerm': 'edit-prerm-payload'
+            'edit-prerm': 'edit-prerm-payload',
+            cmdline: 'run'
         }
     });
     if(args.help) {
@@ -63,7 +64,7 @@ Copyright (C) ldmsys, All rights reserved.
     --name PROJECT_NAME: Set your project's name (package manager friendly) [REQUIRED]
     --version VERSION: Set your project's version. [REQUIRED]
     --desc[ription] DESCRIPTION: Set your project's description [REQUIRED]
-    --cmdline CMDLINE: Set your project's run command. [REQUIRED]
+    --run CMDLINE: Set your project's run command. [REQUIRED]
     --maintainer-name MAINTAINTER_NAME: Set maintainer's name. [REQUIRED]
     --maintainer-email MAINATINER_EMAIL: Set maintainer's email. [REQUIRED]
     --type [service, isolated, normal] : Set project's type. See docs. [REQUIRED]
