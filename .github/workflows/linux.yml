@@ -24,7 +24,6 @@ jobs:
     
     - name: Test FADe (Phase 1-1 / normal type (self packaged))
       run: |
-        cd $GITHUB_WORKSPACE
         sudo npm install -g typescript
         yarn install
         tsc
@@ -48,7 +47,8 @@ jobs:
 
     - name: Test FADe (Phase 2-1 / isolated type (self packaged))
       run: |
-        cd $GITHUB_WORKSPACE
+        git clean -df
+        git reset --hard
         yarn install
         tsc
         COMMIT=$(git rev-parse HEAD | head -c 7)
@@ -71,7 +71,6 @@ jobs:
 
     - name: Test FADe (Phase 3-1 / service type (Dummy Service))
       run: |
-        cd $GITHUB_WORKSPACE
         COMMIT=$(git rev-parse HEAD | head -c 7)
         git clone https://github.com/ldmsys/dummy-node-service
         node dist/ --init --path dummy-node-service --name dummy-node-service --version 0.0.0-$COMMIT-dummy --description "Test" --url "https://github.com/ldmsys/dummy-node-service" --cmdline "node main.js" --dependency nodejs --maintainer-name "ldmsys" --maintainer-email "admin@ldmsys.net" --type service
