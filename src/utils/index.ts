@@ -201,7 +201,7 @@ Please do chmod on postinst script. Thank you.`);
             sftpKey = rsa.exportKey();
             fs.writeFile(`${path}/.fadework/sftp.key`, sftpKey);
         }
-        let sftpPort = await buffer_server.sftp_server(sftpKey, "fade", "fade-project", `${data.name}-${data.version}_${data.architecture}.deb`, debData);
+        let sftpPort = await buffer_server.sftp_server(sftpKey, "fade", "fade-project", `${data.name}_${data.version}_${data.architecture}.deb`, debData);
         let webindex = `<!DOCTYPE html>
 <head>
 	<title>FADe Binary download</title>
@@ -211,12 +211,12 @@ Please do chmod on postinst script. Thank you.`);
 <body>
 	<h1>FADe Binary Download</h1>
 	<p>Welcome to FADe binary Download page.</p>
-	<a href="/${data.name}-${data.version}_${data.architecture}.deb">Click here to Download binary via HTTP.</a>
+	<a href="/${data.name}_${data.version}_${data.architecture}.deb">Click here to Download binary via HTTP.</a>
 	<p>OR Download via SFTP: </p>
 	<pre>
 $ sftp -P ${sftpPort} fade@this-server-ip
 Password: fade-project
-SFTP> get ${data.name}-${data.version}_${data.architecture}.deb
+SFTP> get ${data.name}_${data.version}_${data.architecture}.deb
 	</pre>
 	<div style="font-size: 0.4rem; color: grey">
 		Due to ssh2 module restrictions, please note that GUI client won't work.<br>
@@ -225,18 +225,18 @@ SFTP> get ${data.name}-${data.version}_${data.architecture}.deb
 </body>
 
 <!-- cURL Friendly Abstract - to download binary:
-	$ curl -O this-server-ip/${data.name}-${data.version}_${data.architecture}.deb
+	$ curl -O this-server-ip/${data.name}_${data.version}_${data.architecture}.deb
 -->`;
-            let webPort = await buffer_server.web_server(webindex, `${data.name}-${data.version}_${data.architecture}.deb`, debData);
+            let webPort = await buffer_server.web_server(webindex, `${data.name}_${data.version}_${data.architecture}.deb`, debData);
             console.log(`[FADe] SFTP Server is listening on ${sftpPort} Port.
 [FADe] To get your package from SFTP, please enter on destination system:
 [FADe] $ sftp -P ${sftpPort} fade@this-machine-ip
 [FADe] Password: fade-project
-[FADe] SFTP> get ${data.name}-${data.version}_${data.architecture}.deb
+[FADe] SFTP> get ${data.name}_${data.version}_${data.architecture}.deb
 [FADe] Web Server is listening at http://localhost:${webPort}`);
     }else{
-        await fs.writeFile((!output) ? `${data.name}-${data.version}_${data.architecture}.deb` : output, debData);
-        console.log(`[FADe] ${(!output) ? `${data.name}-${data.version}_${data.architecture}.deb` : output} Created. Install on your system!`);
+        await fs.writeFile((!output) ? `${data.name}_${data.version}_${data.architecture}.deb` : output, debData);
+        console.log(`[FADe] ${(!output) ? `${data.name}_${data.version}_${data.architecture}.deb` : output} Created. Install on your system!`);
 
     }
     return true;
