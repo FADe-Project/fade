@@ -98,7 +98,7 @@ mkdir /usr/lib/${input.name}`;
 
 export function genPostInst(input: FADeConfiguration): string {
     return `#!/bin/bash
-${(input.type == debTypes.service)?`
+${(input.type == debTypes.service || input.type == debTypes.isolated)?`
 useradd -r -s /sbin/nologin -g nogroup -d /usr/lib/${input.name} -c "${input.desc}" ${input.name}
 chown -R ${input.name}:root /usr/lib/${input.name}
 `:''}
