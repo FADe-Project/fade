@@ -49,6 +49,7 @@ jobs:
       run: |
         git clean -df
         git reset --hard
+        rm -rf .fadework
         yarn install
         tsc
         COMMIT=$(git rev-parse HEAD | head -c 7)
