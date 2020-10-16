@@ -35,5 +35,8 @@
   "bugs": {
     "url": "https://github.com/fade-project/fade/issues"
   },
-  "homepage": "https://github.com/fade-project/fade#readme"
+  "homepage": "https://github.com/fade-project/fade#readme",
+  "bin": {
+    "app": "dist/index.js"
+  }
 }
