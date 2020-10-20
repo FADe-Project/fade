@@ -18,14 +18,15 @@
 
 ### isolated type
  * The project with this type generates service user.
- * It generates /usr/bin/(projectname) chdir to your project dir andwhich run your project as service user with sudo(8).
- * /usr/bin/(projectname)'s data can be replaced.
+ * It generates /usr/bin/(projectname) which run your project as a service user.
+ * /usr/bin/(projectname)'s data can be modified.
 
 ### normal type
- * The project with this type generates /usr/bin/(projectname) which chdir to your project dir and run your project as current user.
+ * The project with this type generates /usr/bin/(projectname) which run your project as current user.
  * /usr/bin/(projectname)'s data can be replaced.
+ * Due to the nature of method, relative path won't work. if you need relative path, please use symlink type
 
- ## symlink type
+### symlink type
  * The proect with this type links /usr/bin/(projectname) to your binary/script
  * The binary/script should located in your project directory and executable.
 
