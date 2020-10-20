@@ -7,7 +7,8 @@ const debTypes = {
     service: 'service',
     systemd: 'service',
     isolated: 'isolated',
-    normal: 'normal'
+    normal: 'normal',
+    symlink: 'symlink'
 };
 const arMagicHeader = Buffer.from("!<arch>\n", "utf-8");
 const debianbinaryData = Buffer.from("2.0\n");
@@ -73,9 +74,9 @@ Description: ${input.desc}
 
 export function genPreRm(input: FADeConfiguration): string {
     return `#!/bin/bash
-pushd /usr/lib/${input.name}
+cd /usr/lib/${input.name}
 ${input.prerm_payload}
-popd
+cd /
 ${(input.type == debTypes.service)?`
 if [ "$(uname)" != "Linux" ]; then
     sleep 1
@@ -107,6 +108,9 @@ chown -R ${input.name}:root /usr/lib/${input.name}
 echo "${input.name} v${input.version} by ${input.maintainer_name} <${input.maintainer_email}>"
 cd /usr/lib/${input.name}
 ${input.postinst_payload}
+${(input.type == debTypes.symlink)?`
+rm -f /usr/bin/${input.name}
+ln -s /usr/lib/${name}/${input.run.split(' ')[0].replace('./', '')} /usr/bin/${input.name}`:''}
 ${(input.type == debTypes.service)?`
 if [ "$(uname)" != "Linux" ]; then
     echo "Sorry, but this package is only installable on Linux system."

@@ -85,7 +85,7 @@ export async function validate(path: string): Promise<boolean> {
         data.type = "service";
         modified = true;
     }
-    if(data.type !== debTypes.isolated && data.type !== debTypes.service && data.type !== debTypes.normal) {
+    if(data.type !== debTypes.isolated && data.type !== debTypes.service && data.type !== debTypes.normal && data.type !== debTypes.symlink) {
         CriticalError("Invalid type. see docs for valid types.");
     }
     if(typeof data.blacklist === "undefined") {
@@ -118,6 +118,9 @@ exec sudo -H -u ${input.name} ${input.run} $*
 ${(input.type == debTypes.normal)?`
 cd /usr/lib/${input.name}
 ${input.run}
+`:''}
+${(input.type == debTypes.symlink)?`
+echo "UNUSED IN SYMLINK TYPE, IF YOU ARE SEEING THIS MESSAGE BY BUG, PLEASE REPORT A BUG TO https://github.com/fade-project/fade"
 `:''}`;
     return str;
 }

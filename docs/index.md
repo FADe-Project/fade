@@ -13,8 +13,8 @@
 ## Types
  * FADe Project has 3 project types.
 
-### systemd type
- * The project with this type generates systemd service and service user.
+### service type
+ * The project with this type generates both systemd and sysvinit service and service user.
 
 ### isolated type
  * The project with this type generates service user.
@@ -24,6 +24,10 @@
 ### normal type
  * This project with this type generates /usr/bin/(projectname) which chdir to your project dir and run your project as current user.
  * /usr/bin/(projectname)'s data can be replaced.
+
+ ## symlink type
+ * This porject with this type links /usr/bin/(projectname) to your binary/script
+ * The binary/script should located in your project directory and executable (hashbang and chmod 755)
 
 ## Issue Report
  * Issues: [Github Issues](https://github.com/fade-project/fade/issues)
