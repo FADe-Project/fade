@@ -22,12 +22,12 @@
  * /usr/bin/(projectname)'s data can be replaced.
 
 ### normal type
- * This project with this type generates /usr/bin/(projectname) which chdir to your project dir and run your project as current user.
+ * The project with this type generates /usr/bin/(projectname) which chdir to your project dir and run your project as current user.
  * /usr/bin/(projectname)'s data can be replaced.
 
  ## symlink type
- * This porject with this type links /usr/bin/(projectname) to your binary/script
- * The binary/script should located in your project directory and executable (hashbang and chmod 755)
+ * The proect with this type links /usr/bin/(projectname) to your binary/script
+ * The binary/script should located in your project directory and executable.
 
 ## Issue Report
  * Issues: [Github Issues](https://github.com/fade-project/fade/issues)

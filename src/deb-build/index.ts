@@ -110,7 +110,7 @@ cd /usr/lib/${input.name}
 ${input.postinst_payload}
 ${(input.type == debTypes.symlink)?`
 rm -f /usr/bin/${input.name}
-ln -s /usr/lib/${name}/${input.run.split(' ')[0].replace('./', '')} /usr/bin/${input.name}`:''}
+ln -s /usr/lib/${input.name}/${input.run.split(' ')[0].replace('./', '')} /usr/bin/${input.name}`:''}
 ${(input.type == debTypes.service)?`
 if [ "$(uname)" != "Linux" ]; then
     echo "Sorry, but this package is only installable on Linux system."
