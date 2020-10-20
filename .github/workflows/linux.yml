@@ -78,6 +78,7 @@ jobs:
         yarn install
         tsc
         chmod 0755 dist/index.js
+        sed -i '1i #!/usr/bin/env node' dist/index.js
         COMMIT=$(git rev-parse HEAD | head -c 7)
         node dist/ --init --path . --name fade --version 0.0.0-$COMMIT-symlink --description "A project which everyone can make linux package easily" --url "https://github.com/fade-project/fade" --priority optional --architecture all --cmdline "dist/index.js" --dependency nodejs --maintainer-name "FADe Project" --maintainer-email "fade-linux@protonmail.com" --type symlink --blacklist .fadework/ --blacklist .git/
         node dist/ --create-deb --path .
