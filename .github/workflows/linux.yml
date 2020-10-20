@@ -70,14 +70,41 @@ jobs:
         sudo dpkg --ignore-depends=nodejs -i fade_0.0.0-$COMMIT-isolated_all.deb
         fade moo
 
-    - name: Test FADe (Phase 3-1 / service type (Dummy Service))
+    - name: Test FADe (Phase 3-1 / symlink type (self packaged))
+      run: |
+        git clean -df
+        git reset --hard
+        rm -rf .fadework
+        yarn install
+        tsc
+        chmod 0755 dist/index.js
+        sed -i '1i #!/usr/bin/env node' dist/index.js
+        COMMIT=$(git rev-parse HEAD | head -c 7)
+        node dist/ --init --path . --name fade --version 0.0.0-$COMMIT-symlink --description "A project which everyone can make linux package easily" --url "https://github.com/fade-project/fade" --priority optional --architecture all --cmdline "dist/index.js" --dependency nodejs --maintainer-name "FADe Project" --maintainer-email "fade-linux@protonmail.com" --type symlink --blacklist .fadework/ --blacklist .git/
+        node dist/ --create-deb --path .
+
+    - name: Test FADe (Phase 3-2 / Upload to GitHub Artifact)
+      uses: actions/upload-artifact@v2
+      with:
+        # Artifact name
+        name: Debian Package (symlink, self)
+        # A file, directory or wildcard pattern that describes what to upload
+        path: fade_0.0.0-*_all.deb
+
+    - name: Test FADe (Phase 3-3 / symlink type (self packaged))
+      run: |
+        COMMIT=$(git rev-parse HEAD | head -c 7)
+        sudo dpkg --ignore-depends=nodejs -i fade_0.0.0-$COMMIT-symlink_all.deb
+        fade moo
+
+    - name: Test FADe (Phase 4-1 / service type (Dummy Service))
       run: |
         COMMIT=$(git rev-parse HEAD | head -c 7)
         git clone https://github.com/ldmsys/dummy-node-service
         node dist/ --init --path dummy-node-service --name dummy-node-service --version 0.0.0-$COMMIT-dummy --description "Test" --url "https://github.com/ldmsys/dummy-node-service" --cmdline "node main.js" --dependency nodejs --maintainer-name "ldmsys" --maintainer-email "admin@ldmsys.net" --type service
         node dist/ --create-deb --path ./dummy-node-service --output dummy-node-service_0.0.0-$COMMIT-dummy_all.deb
     
-    - name: Test FADe (Phase 3-2 / Upload to GitHub Artifact)
+    - name: Test FADe (Phase 4-2 / Upload to GitHub Artifact)
       uses: actions/upload-artifact@v2
       with:
         # Artifact name
@@ -85,13 +112,13 @@ jobs:
         # A file, directory or wildcard pattern that describes what to upload
         path: dummy-node-service_0.0.0-*_all.deb
 
-    - name: Test FADe (Phase 3-3 / isolated type (self packaged))
+    - name: Test FADe (Phase 4-3 / isolated type (self packaged))
       run: |
         COMMIT=$(git rev-parse HEAD | head -c 7)
         sudo dpkg --ignore-depends=nodejs -i dummy-node-service_0.0.0-$COMMIT-dummy_all.deb
         systemctl status dummy-node-service
 
-    - name: Test FADe (Phase 3-4 / Remove Test)
+    - name: Test FADe (Phase 4-4 / Remove Test)
       run: |
         sudo dpkg -P dummy-node-service
 
