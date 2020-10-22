@@ -34,8 +34,11 @@ FADe Project Converts your project into a package.
 ```
  5. Now, you can use dist/ as you needed.
 
+## Known Issues
+* There's no known issues. if you found bug, please report to [Issues](https://github.com/fade-project/fade/issues)
+
 ## TO-DO
- * Create Redhat Package
+* Create Redhat Package
 
 ## License
  * FADe Project is distributed under MIT License.
