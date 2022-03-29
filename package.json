@@ -5,7 +5,7 @@
   "main": "dist/",
   "dependencies": {
     "buffer-server": "^1.2.1",
-    "minimist": "^1.2.5",
+    "minimist": "^1.2.6",
     "node-rsa": "^1.1.1",
     "readline-sync": "^1.4.10",
     "recursive-copy": "^2.0.10",
