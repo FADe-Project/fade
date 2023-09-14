@@ -117,7 +117,7 @@ exec sudo -H -u ${input.name} ${input.run} $*
 `:''}
 ${(input.type == debTypes.normal)?`
 cd /usr/lib/${input.name}
-${input.run}
+${input.run} $*
 `:''}
 ${(input.type == debTypes.symlink)?`
 echo "UNUSED IN SYMLINK TYPE, IF YOU ARE SEEING THIS MESSAGE BY BUG, PLEASE REPORT A BUG TO https://github.com/fade-project/fade"
