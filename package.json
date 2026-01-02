@@ -10,7 +10,7 @@
     "readline-sync": "^1.4.10",
     "recursive-copy": "^2.0.10",
     "rimraf": "^3.0.2",
-    "tar-fs": "^2.1.0",
+    "tar-fs": "^2.1.4",
     "tar-stream": "^2.1.4",
     "tmp": "^0.2.1"
   },
